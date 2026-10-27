@@ -85,32 +85,6 @@ const getFooterLinksData = (t: (key: string) => string): FooterLinks[] => [
       },
     ],
   },
-  {
-    id: 4,
-    title: t("footer.resources"),
-    children: [
-      {
-        id: 41,
-        label: t("footer.freeEbooks"),
-        url: "#",
-      },
-      {
-        id: 42,
-        label: t("footer.devTutorial"),
-        url: "#",
-      },
-      {
-        id: 43,
-        label: t("footer.blog"),
-        url: "#",
-      },
-      {
-        id: 44,
-        label: t("footer.youtube"),
-        url: "#",
-      },
-    ],
-  },
 ];
 
 const LinksSection = () => {

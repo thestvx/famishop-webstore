@@ -94,7 +94,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.language": "Langue",
     "common.currency": "Devise",
     "common.searchPlaceholder": "Rechercher des produits...",
-    "home.heroTitle": "TROUVEZ DES VÊTEMENTS QUI CORRESPONDENT À VOTRE STYLE",
+    "home.heroTitle": "TROUVEZ VOTRE STYLE",
     "home.heroDesc":
       "Parcourez notre gamme diversifiée de vêtements soigneusement conçus, pour mettre en valeur votre individualité et répondre à votre sens du style.",
     "home.shopNow": "Acheter maintenant",

@@ -96,10 +96,10 @@ const Footer = () => {
                 ))}
               </div>
             </div>
-            <div className="hidden lg:grid col-span-9 lg:grid-cols-4 lg:pl-10">
+            <div className="hidden lg:grid col-span-9 lg:grid-cols-3 lg:pl-10">
               <LinksSection />
             </div>
-            <div className="grid lg:hidden grid-cols-2 sm:grid-cols-4">
+            <div className="grid lg:hidden grid-cols-2 sm:grid-cols-3">
               <LinksSection />
             </div>
           </nav>
