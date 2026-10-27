@@ -88,6 +88,6 @@
 }
 
 html[dir="rtl"] body {
-  font-family: var(--font-thmanyah), var(--font-satoshi), system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-thmanyah), system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif !important;
 }

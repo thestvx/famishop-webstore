@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${satoshi.className} ${thmanyahSans.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${satoshi.className} ${thmanyahSans.variable}`} suppressHydrationWarning>
         <HolyLoader color="#868686" />
         <TopBanner />
         <Providers>

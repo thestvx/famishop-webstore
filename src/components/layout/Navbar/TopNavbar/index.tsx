@@ -85,16 +85,16 @@ const TopNavbar = () => {
           </div>
           <Link
             href="/"
-            className="flex items-center mr-2 lg:mr-6"
+            className="flex items-center mr-2 lg:mr-8"
             aria-label="Famishop home"
           >
             <Image
               src="/images/Famishoplogo.png"
               alt="Famishop"
-              width={180}
-              height={54}
+              width={220}
+              height={66}
               priority
-              className="h-10 w-auto sm:h-11 md:h-12 lg:h-14 object-contain"
+              className="h-12 w-auto sm:h-14 md:h-16 lg:h-[72px] xl:h-[80px] object-contain"
             />
           </Link>
         </div>

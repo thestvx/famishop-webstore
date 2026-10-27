@@ -31,6 +31,13 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.language": "Language",
     "common.currency": "Currency",
     "common.searchPlaceholder": "Search for products...",
+    "home.heroTitle": "FIND CLOTHES THAT MATCHES YOUR STYLE",
+    "home.heroDesc":
+      "Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality and cater to your sense of style.",
+    "home.shopNow": "Shop Now",
+    "home.internationalBrands": "International Brands",
+    "home.highQualityProducts": "High-Quality Products",
+    "home.happyCustomers": "Happy Customers",
   },
   fr: {
     "nav.shop": "Boutique",
@@ -48,6 +55,13 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.language": "Langue",
     "common.currency": "Devise",
     "common.searchPlaceholder": "Rechercher des produits...",
+    "home.heroTitle": "TROUVEZ DES VÊTEMENTS QUI CORRESPONDENT À VOTRE STYLE",
+    "home.heroDesc":
+      "Parcourez notre gamme diversifiée de vêtements soigneusement conçus, pour mettre en valeur votre individualité et répondre à votre sens du style.",
+    "home.shopNow": "Acheter maintenant",
+    "home.internationalBrands": "Marques internationales",
+    "home.highQualityProducts": "Produits de haute qualité",
+    "home.happyCustomers": "Clients satisfaits",
   },
   ar: {
     "nav.shop": "المتجر",
@@ -65,6 +79,13 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.language": "اللغة",
     "common.currency": "العملة",
     "common.searchPlaceholder": "ابحث عن المنتجات...",
+    "home.heroTitle": "اعثر على ملابس تناسب أسلوبك",
+    "home.heroDesc":
+      "تصفح مجموعتنا المتنوعة من الملابس المصممة بعناية، لتبرز فرديتك وتلبي ذوقك وأسلوبك الخاص.",
+    "home.shopNow": "تسوق الآن",
+    "home.internationalBrands": "علامات تجارية عالمية",
+    "home.highQualityProducts": "منتجات عالية الجودة",
+    "home.happyCustomers": "عملاء سعداء",
   },
   it: {
     "nav.shop": "Negozio",
@@ -82,6 +103,13 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.language": "Lingua",
     "common.currency": "Valuta",
     "common.searchPlaceholder": "Cerca prodotti...",
+    "home.heroTitle": "TROVA I VESTITI CHE SI ADATTANO AL TUO STILE",
+    "home.heroDesc":
+      "Sfoglia la nostra vasta gamma di capi meticolosamente realizzati, pensati per esaltare la tua individualità e soddisfare il tuo senso dello stile.",
+    "home.shopNow": "Acquista ora",
+    "home.internationalBrands": "Marchi internazionali",
+    "home.highQualityProducts": "Prodotti di alta qualità",
+    "home.happyCustomers": "Clienti soddisfatti",
   },
 };
 
