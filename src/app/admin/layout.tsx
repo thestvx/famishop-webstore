@@ -15,7 +15,8 @@ export default function AdminLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (pathname === "/admin/login") {
+  const isLogin = pathname?.replace(/\/$/, "") === "/admin/login";
+  if (isLogin) {
     return <AuthGuard>{children}</AuthGuard>;
   }
 
