@@ -40,11 +40,11 @@ const ResTopNavbar = ({ data }: { data: NavMenu }) => {
             <SheetClose asChild>
               <Link href="/" className="flex items-center">
                 <Image
-                  src="/images/Famishoplogo.png"
+                  src="/images/Famishoplogo02.png"
                   alt="Famishop"
-                  width={200}
-                  height={60}
-                  className="h-12 w-auto object-contain"
+                  width={220}
+                  height={66}
+                  className="h-14 w-auto object-contain"
                 />
               </Link>
             </SheetClose>

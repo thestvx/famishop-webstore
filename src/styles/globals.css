@@ -87,7 +87,7 @@
   }
 }
 
-html[dir="rtl"] body {
-  font-family: var(--font-thmanyah), system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif !important;
+html[dir="rtl"] body,
+html[dir="rtl"] * {
+  font-family: var(--font-thmanyah), Tahoma, Arial, sans-serif !important;
 }

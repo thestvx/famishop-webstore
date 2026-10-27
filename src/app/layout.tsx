@@ -23,7 +23,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${satoshi.className} ${thmanyahSans.variable}`} suppressHydrationWarning>
+      <body className={`${satoshi.className}`} suppressHydrationWarning>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              :root {
+                --font-thmanyah: ${thmanyahSans.style.fontFamily};
+              }
+              html[dir="rtl"], html[dir="rtl"] body, html[dir="rtl"] * {
+                font-family: var(--font-thmanyah), Tahoma, Arial, sans-serif !important;
+              }
+            `,
+          }}
+        />
         <HolyLoader color="#868686" />
         <TopBanner />
         <Providers>

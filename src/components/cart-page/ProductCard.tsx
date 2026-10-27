@@ -1,18 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { PiTrashFill } from "react-icons/pi";
 import Image from "next/image";
 import Link from "next/link";
-import CartCounter from "@/components/ui/CartCounter";
-import { Button } from "../ui/button";
+import { RootState } from "@/lib/store";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/redux";
 import {
   addToCart,
   CartItem,
   remove,
   removeCartItem,
 } from "@/lib/features/carts/cartsSlice";
-import { useAppDispatch } from "@/lib/hooks/redux";
+import { Product } from "@/types/product.types";
+import { useI18n } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+import CartCounter from "@/components/ui/CartCounter";
 
 type ProductCardProps = {
   data: CartItem;
@@ -20,6 +23,7 @@ type ProductCardProps = {
 
 const ProductCard = ({ data }: ProductCardProps) => {
   const dispatch = useAppDispatch();
+  const { formatPrice } = useI18n();
 
   return (
     <div className="flex items-start space-x-4">

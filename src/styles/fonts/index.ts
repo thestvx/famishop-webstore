@@ -62,7 +62,8 @@ const thmanyahSans = localFont({
       style: "normal",
     },
   ],
-  fallback: ["system-ui", "sans-serif"],
+  display: "swap",
+  fallback: ["Tahoma", "Arial", "sans-serif"],
   variable: "--font-thmanyah",
 });
 

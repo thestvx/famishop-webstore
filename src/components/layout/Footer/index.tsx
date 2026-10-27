@@ -67,14 +67,14 @@ const Footer = () => {
       <div className="pt-8 md:pt-[50px] bg-[#F0F0F0] px-4 pb-4">
         <div className="max-w-frame mx-auto">
           <nav className="lg:grid lg:grid-cols-12 mb-8">
-            <div className="flex flex-col lg:col-span-3 lg:max-w-[280px]">
+            <div className="flex flex-col lg:col-span-3 lg:max-w-[360px]">
               <Link href="/" className="mb-6">
                 <Image
-                  src="/images/Famishoplogo.png"
+                  src="/images/Famishoplogo02.png"
                   alt="Famishop"
-                  width={200}
-                  height={60}
-                  className="h-12 w-auto object-contain"
+                  width={280}
+                  height={84}
+                  className="h-16 w-auto object-contain"
                 />
               </Link>
               <p className="text-black/60 text-sm mb-9">

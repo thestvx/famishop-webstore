@@ -38,6 +38,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "home.internationalBrands": "International Brands",
     "home.highQualityProducts": "High-Quality Products",
     "home.happyCustomers": "Happy Customers",
+    "announcement.text": "Sign up and get 20% off to your first order.",
+    "announcement.signup": "Sign Up Now",
   },
   fr: {
     "nav.shop": "Boutique",
@@ -62,6 +64,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "home.internationalBrands": "Marques internationales",
     "home.highQualityProducts": "Produits de haute qualité",
     "home.happyCustomers": "Clients satisfaits",
+    "announcement.text": "Inscrivez-vous et bénéficiez de 20 % de réduction sur votre première commande.",
+    "announcement.signup": "S'inscrire maintenant",
   },
   ar: {
     "nav.shop": "المتجر",
@@ -86,6 +90,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "home.internationalBrands": "علامات تجارية عالمية",
     "home.highQualityProducts": "منتجات عالية الجودة",
     "home.happyCustomers": "عملاء سعداء",
+    "announcement.text": "سجّل واحصل على خصم ٢٠٪ على أول طلب لك.",
+    "announcement.signup": "سجّل الآن",
   },
   it: {
     "nav.shop": "Negozio",
@@ -110,6 +116,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "home.internationalBrands": "Marchi internazionali",
     "home.highQualityProducts": "Prodotti di alta qualità",
     "home.happyCustomers": "Clienti soddisfatti",
+    "announcement.text": "Iscriviti e ottieni il 20% di sconto sul tuo primo ordine.",
+    "announcement.signup": "Iscriviti ora",
   },
 };
 
@@ -211,7 +219,16 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useI18n = () => {
   const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
+  if (!ctx) {
+    return {
+      locale: "en" as Locale,
+      setLocale: () => {},
+      currency: "USD" as Currency,
+      setCurrency: () => {},
+      t: (key: string) => key,
+      formatPrice: (amount: number) => `$${amount.toFixed(2)}`,
+    };
+  }
   return ctx;
 };
 
