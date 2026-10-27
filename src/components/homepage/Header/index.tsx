@@ -96,7 +96,7 @@ const Header = () => {
           whileInView={{ y: "0", opacity: 1, rotate: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 2.3, duration: 0.8 }}
-          className="relative md:px-4 min-h-[448px] md:min-h-[428px] bg-cover bg-center bg-no-repeat bg-[url('/images/familyphoto.png')]"
+          className="relative md:px-4 min-h-[520px] md:min-h-[560px] lg:min-h-[620px] bg-cover bg-center bg-no-repeat bg-[url('/images/familyphoto.png')]"
         >
           <Image
             priority
