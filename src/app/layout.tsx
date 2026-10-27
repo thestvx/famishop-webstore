@@ -6,6 +6,7 @@ import TopNavbar from "@/components/layout/Navbar/TopNavbar";
 import Footer from "@/components/layout/Footer";
 import HolyLoader from "holy-loader";
 import Providers from "./providers";
+import RegionModal from "@/components/common/RegionModal";
 
 export const metadata: Metadata = {
   title: "Famishop",
@@ -30,8 +31,30 @@ export default function RootLayout({
               :root {
                 --font-thmanyah: ${thmanyahSans.style.fontFamily};
               }
-              html[dir="rtl"], html[dir="rtl"] body, html[dir="rtl"] * {
+              html[dir="rtl"] body,
+              html[dir="rtl"] button,
+              html[dir="rtl"] input,
+              html[dir="rtl"] select,
+              html[dir="rtl"] textarea,
+              html[dir="rtl"] a,
+              html[dir="rtl"] p,
+              html[dir="rtl"] span,
+              html[dir="rtl"] h1,
+              html[dir="rtl"] h2,
+              html[dir="rtl"] h3,
+              html[dir="rtl"] h4,
+              html[dir="rtl"] h5,
+              html[dir="rtl"] h6,
+              html[dir="rtl"] li,
+              html[dir="rtl"] label {
                 font-family: var(--font-thmanyah), Tahoma, Arial, sans-serif !important;
+              }
+              html[dir="rtl"] h1,
+              html[dir="rtl"] h2,
+              html[dir="rtl"] h3,
+              html[dir="rtl"] .font-black,
+              html[dir="rtl"] .font-extrabold {
+                font-weight: 900 !important;
               }
             `,
           }}
@@ -39,6 +62,7 @@ export default function RootLayout({
         <HolyLoader color="#868686" />
         <TopBanner />
         <Providers>
+          <RegionModal />
           <TopNavbar />
           {children}
         </Providers>

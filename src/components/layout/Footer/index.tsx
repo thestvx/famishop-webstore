@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { integralCF } from "@/styles/fonts";
 import React from "react";
@@ -8,6 +10,7 @@ import LinksSection from "./LinksSection";
 import Image from "next/image";
 import NewsLetterSection from "./NewsLetterSection";
 import LayoutSpacing from "./LayoutSpacing";
+import { useI18n } from "@/lib/i18n";
 
 const socialsData: SocialNetworks[] = [
   {
@@ -56,6 +59,7 @@ const paymentBadgesData: PaymentBadge[] = [
 ];
 
 const Footer = () => {
+  const { t } = useI18n();
   return (
     <footer className="mt-10">
       <div className="relative">
@@ -78,8 +82,7 @@ const Footer = () => {
                 />
               </Link>
               <p className="text-black/60 text-sm mb-9">
-                We have clothes that suits your style and which you’re proud to
-                wear. From women to men.
+                {t("footer.desc")}
               </p>
               <div className="flex items-center">
                 {socialsData.map((social) => (

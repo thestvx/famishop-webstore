@@ -16,7 +16,7 @@ import ResTopNavbar from "./ResTopNavbar";
 import CartBtn from "./CartBtn";
 import LocaleSwitcher from "@/components/common/LocaleSwitcher";
 import CurrencySwitcher from "@/components/common/CurrencySwitcher";
-import { useTranslations } from "@/lib/i18n";
+import { useI18n, useTranslations } from "@/lib/i18n";
 
 const getData = (t: (key: string) => string): NavMenu => [
   {
@@ -75,6 +75,7 @@ const getData = (t: (key: string) => string): NavMenu => [
 
 const TopNavbar = () => {
   const t = useTranslations();
+  const { region, setRegion } = useI18n() as any;
   const data = getData(t);
   return (
     <nav className="sticky top-0 bg-white z-20">
@@ -94,7 +95,7 @@ const TopNavbar = () => {
               width={340}
               height={102}
               priority
-              className="h-[72px] w-auto sm:h-20 md:h-24 lg:h-[104px] xl:h-[116px] object-contain"
+              className="h-[72px] w-auto sm:h-20 md:h-24 lg:h-[104px] xl:h-[116px] object-contain flex-shrink-0"
             />
           </Link>
         </div>
@@ -132,6 +133,18 @@ const TopNavbar = () => {
         </InputGroup>
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="hidden lg:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.localStorage.removeItem("famishop-region");
+                  window.location.reload();
+                }
+              }}
+              className="text-sm px-2 py-1 rounded-md hover:bg-gray-100"
+            >
+              {region === "algeria" ? "Algérie" : "Europe"}
+            </button>
             <LocaleSwitcher />
             <CurrencySwitcher />
           </div>

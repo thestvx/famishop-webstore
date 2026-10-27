@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 
 const currencies: Array<{ code: Currency; label: string; symbol: string }> = [
-  { code: "USD", label: "USD - US Dollar", symbol: "$" },
   { code: "EUR", label: "EUR - Euro", symbol: "€" },
   { code: "DZD", label: "DZD - Algerian Dinar", symbol: "د.ج" },
 ];

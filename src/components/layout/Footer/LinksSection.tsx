@@ -1,109 +1,112 @@
+"use client";
+
 import React from "react";
 import { FooterLinks } from "./footer.types";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
-const footerLinksData: FooterLinks[] = [
+const getFooterLinksData = (t: (key: string) => string): FooterLinks[] => [
   {
     id: 1,
-    title: "company",
+    title: t("footer.company"),
     children: [
       {
         id: 11,
-        label: "about",
+        label: t("footer.about"),
         url: "#",
       },
       {
         id: 12,
-        label: "features",
+        label: t("footer.features"),
         url: "#",
       },
       {
         id: 13,
-        label: "works",
+        label: t("footer.works"),
         url: "#",
       },
       {
         id: 14,
-        label: "career",
+        label: t("footer.career"),
         url: "#",
       },
     ],
   },
   {
     id: 2,
-    title: "help",
+    title: t("footer.help"),
     children: [
       {
         id: 21,
-        label: "customer support",
+        label: t("footer.customerSupport"),
         url: "#",
       },
       {
         id: 22,
-        label: "delivery details",
+        label: t("footer.deliveryDetails"),
         url: "#",
       },
       {
         id: 23,
-        label: "terms & conditions",
+        label: t("footer.terms"),
         url: "#",
       },
       {
         id: 24,
-        label: "privacy policy",
+        label: t("footer.privacy"),
         url: "#",
       },
     ],
   },
   {
     id: 3,
-    title: "faq",
+    title: t("footer.faq"),
     children: [
       {
         id: 31,
-        label: "account",
+        label: t("footer.account"),
         url: "#",
       },
       {
         id: 32,
-        label: "manage deliveries",
+        label: t("footer.manageDeliveries"),
         url: "#",
       },
       {
         id: 33,
-        label: "orders",
+        label: t("footer.orders"),
         url: "#",
       },
       {
         id: 34,
-        label: "payments",
+        label: t("footer.payments"),
         url: "#",
       },
     ],
   },
   {
     id: 4,
-    title: "resources",
+    title: t("footer.resources"),
     children: [
       {
         id: 41,
-        label: "Free eBooks",
+        label: t("footer.freeEbooks"),
         url: "#",
       },
       {
         id: 42,
-        label: "development tutorial",
+        label: t("footer.devTutorial"),
         url: "#",
       },
       {
         id: 43,
-        label: "How to - Blog",
+        label: t("footer.blog"),
         url: "#",
       },
       {
         id: 44,
-        label: "youtube playlist",
+        label: t("footer.youtube"),
         url: "#",
       },
     ],
@@ -111,6 +114,8 @@ const footerLinksData: FooterLinks[] = [
 ];
 
 const LinksSection = () => {
+  const { t } = useI18n();
+  const footerLinksData = getFooterLinksData(t);
   return (
     <>
       {footerLinksData.map((item) => (
@@ -123,7 +128,6 @@ const LinksSection = () => {
               href={link.url}
               key={link.id}
               className={cn([
-                link.id !== 41 && link.id !== 43 && "capitalize",
                 "text-black/60 text-sm md:text-base mb-4 w-fit",
               ])}
             >

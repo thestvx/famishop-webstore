@@ -3,13 +3,16 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 export type Locale = "en" | "fr" | "ar" | "it";
-export type Currency = "USD" | "EUR" | "DZD";
+export type Currency = "EUR" | "DZD";
+export type Region = "algeria" | "europe";
 
 type I18nContextValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   currency: Currency;
   setCurrency: (currency: Currency) => void;
+  region: Region;
+  setRegion: (region: Region) => void;
   t: (key: string) => string;
   formatPrice: (amount: number) => string;
 };
@@ -48,6 +51,30 @@ const translations: Record<Locale, Record<string, string>> = {
     "dressStyle.gym": "Gym",
     "dressStyle.party": "Party",
     "common.viewAll": "View All",
+    "footer.desc": "We have clothes that suits your style and which you're proud to wear. From women to men.",
+    "footer.company": "Company",
+    "footer.about": "About",
+    "footer.features": "Features",
+    "footer.works": "Works",
+    "footer.career": "Career",
+    "footer.help": "Help",
+    "footer.customerSupport": "Customer Support",
+    "footer.deliveryDetails": "Delivery Details",
+    "footer.terms": "Terms & Conditions",
+    "footer.privacy": "Privacy Policy",
+    "footer.faq": "FAQ",
+    "footer.account": "Account",
+    "footer.manageDeliveries": "Manage Deliveries",
+    "footer.orders": "Orders",
+    "footer.payments": "Payments",
+    "footer.resources": "Resources",
+    "footer.freeEbooks": "Free eBooks",
+    "footer.devTutorial": "Development Tutorial",
+    "footer.blog": "How to - Blog",
+    "footer.youtube": "Youtube Playlist",
+    "newsletter.title": "STAY UP TO DATE ABOUT OUR LATEST OFFERS",
+    "newsletter.placeholder": "Enter your email address",
+    "newsletter.subscribe": "Subscribe to Newsletter",
   },
   fr: {
     "nav.shop": "Boutique",
@@ -82,6 +109,30 @@ const translations: Record<Locale, Record<string, string>> = {
     "dressStyle.gym": "Sport",
     "dressStyle.party": "Soirée",
     "common.viewAll": "Voir tout",
+    "footer.desc": "Nous avons des vêtements qui correspondent à votre style et dont vous serez fier de porter. Pour femmes et hommes.",
+    "footer.company": "Entreprise",
+    "footer.about": "À propos",
+    "footer.features": "Caractéristiques",
+    "footer.works": "Comment ça fonctionne",
+    "footer.career": "Carrières",
+    "footer.help": "Aide",
+    "footer.customerSupport": "Service client",
+    "footer.deliveryDetails": "Détails de livraison",
+    "footer.terms": "Conditions générales",
+    "footer.privacy": "Politique de confidentialité",
+    "footer.faq": "FAQ",
+    "footer.account": "Compte",
+    "footer.manageDeliveries": "Gérer les livraisons",
+    "footer.orders": "Commandes",
+    "footer.payments": "Paiements",
+    "footer.resources": "Ressources",
+    "footer.freeEbooks": "E-books gratuits",
+    "footer.devTutorial": "Tutoriel de développement",
+    "footer.blog": "Blog",
+    "footer.youtube": "Chaîne YouTube",
+    "newsletter.title": "RESTEZ INFORMÉ DE NOS DERNIÈRES OFFRES",
+    "newsletter.placeholder": "Entrez votre adresse e-mail",
+    "newsletter.subscribe": "S'abonner à la newsletter",
   },
   ar: {
     "nav.shop": "المتجر",
@@ -116,6 +167,30 @@ const translations: Record<Locale, Record<string, string>> = {
     "dressStyle.gym": "رياضي",
     "dressStyle.party": "حفلة",
     "common.viewAll": "عرض الكل",
+    "footer.desc": "لدينا ملابس تناسب أسلوبك وتفخر بارتدائها، للنساء والرجال.",
+    "footer.company": "الشركة",
+    "footer.about": "من نحن",
+    "footer.features": "المزايا",
+    "footer.works": "كيف نعمل",
+    "footer.career": "الوظائف",
+    "footer.help": "المساعدة",
+    "footer.customerSupport": "دعم العملاء",
+    "footer.deliveryDetails": "تفاصيل التوصيل",
+    "footer.terms": "الشروط والأحكام",
+    "footer.privacy": "سياسة الخصوصية",
+    "footer.faq": "الأسئلة الشائعة",
+    "footer.account": "الحساب",
+    "footer.manageDeliveries": "إدارة التوصيل",
+    "footer.orders": "الطلبات",
+    "footer.payments": "الدفع",
+    "footer.resources": "الموارد",
+    "footer.freeEbooks": "كتب إلكترونية مجانية",
+    "footer.devTutorial": "دروس التطوير",
+    "footer.blog": "المدونة",
+    "footer.youtube": "قائمة يوتيوب",
+    "newsletter.title": "ابقَ على اطلاع بأحدث العروض",
+    "newsletter.placeholder": "أدخل بريدك الإلكتروني",
+    "newsletter.subscribe": "اشترك في النشرة البريدية",
   },
   it: {
     "nav.shop": "Negozio",
@@ -150,17 +225,36 @@ const translations: Record<Locale, Record<string, string>> = {
     "dressStyle.gym": "Palestra",
     "dressStyle.party": "Festa",
     "common.viewAll": "Vedi tutto",
+    "footer.desc": "Abbiamo abiti adatti al tuo stile e di cui puoi essere orgoglioso di indossare. Per donne e uomini.",
+    "footer.company": "Azienda",
+    "footer.about": "Chi siamo",
+    "footer.features": "Caratteristiche",
+    "footer.works": "Come funziona",
+    "footer.career": "Carriere",
+    "footer.help": "Aiuto",
+    "footer.customerSupport": "Supporto clienti",
+    "footer.deliveryDetails": "Dettagli di consegna",
+    "footer.terms": "Termini e condizioni",
+    "footer.privacy": "Informativa sulla privacy",
+    "footer.faq": "Domande frequenti",
+    "footer.account": "Account",
+    "footer.manageDeliveries": "Gestisci consegne",
+    "footer.orders": "Ordini",
+    "footer.payments": "Pagamenti",
+    "footer.resources": "Risorse",
+    "footer.freeEbooks": "Ebook gratuiti",
+    "footer.devTutorial": "Tutorial di sviluppo",
+    "footer.blog": "Blog",
+    "footer.youtube": "Playlist YouTube",
+    "newsletter.title": "RIMANI AGGIORNATO SULLE NOSTRE ULTIME OFFERTE",
+    "newsletter.placeholder": "Inserisci il tuo indirizzo email",
+    "newsletter.subscribe": "Iscriviti alla newsletter",
   },
 };
 
-const currencyRates: Record<Currency, number> = {
-  USD: 1,
-  EUR: 0.92,
-  DZD: 134.5,
-};
+const EXCHANGE_RATE_EUR_TO_DZD = 145.0;
 
 const currencySymbols: Record<Currency, string> = {
-  USD: "$",
   EUR: "€",
   DZD: "د.ج",
 };
@@ -180,22 +274,30 @@ const getInitialLocale = (): Locale => {
   return "en";
 };
 
-const getInitialCurrency = (): Currency => {
-  if (typeof window === "undefined") return "USD";
-  const stored = window.localStorage.getItem("famishop-currency");
-  if (stored === "USD" || stored === "EUR" || stored === "DZD") {
+const getInitialRegion = (): Region | null => {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem("famishop-region");
+  if (stored === "algeria" || stored === "europe") {
     return stored;
   }
-  return "USD";
+  return null;
+};
+
+const getInitialCurrency = (region: Region | null): Currency => {
+  if (region === "algeria") return "DZD";
+  return "EUR";
 };
 
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const [locale, setLocaleState] = useState<Locale>("en");
-  const [currency, setCurrencyState] = useState<Currency>("USD");
+  const [region, setRegionState] = useState<Region | null>(null);
+  const [currency, setCurrencyState] = useState<Currency>("EUR");
 
   useEffect(() => {
     setLocaleState(getInitialLocale());
-    setCurrencyState(getInitialCurrency());
+    const initialRegion = getInitialRegion();
+    setRegionState(initialRegion);
+    setCurrencyState(getInitialCurrency(initialRegion));
   }, []);
 
   const setLocale = (next: Locale) => {
@@ -204,6 +306,15 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
       window.localStorage.setItem("famishop-locale", next);
       document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
       document.documentElement.lang = next;
+    }
+  };
+
+  const setRegion = (next: Region) => {
+    setRegionState(next);
+    const nextCurrency = next === "algeria" ? "DZD" : "EUR";
+    setCurrencyState(nextCurrency);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("famishop-region", next);
     }
   };
 
@@ -229,21 +340,29 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 
   const formatPrice = useMemo(() => {
     return (amount: number) => {
-      const converted = amount * currencyRates[currency];
-      const symbol = currencySymbols[currency];
-      if (currency === "DZD") {
-        return `${Math.round(converted).toLocaleString("fr-DZ")} ${symbol}`;
+      if (region === null) {
+        return `${amount.toLocaleString(locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : locale === "it" ? "it-IT" : "ar-EG", {
+          style: "currency",
+          currency: "EUR",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
       }
-      return `${symbol}${converted.toLocaleString(locale === "en" ? "en-US" : locale, {
+      if (currency === "DZD") {
+        const converted = amount * EXCHANGE_RATE_EUR_TO_DZD;
+        return `${Math.round(converted).toLocaleString("fr-DZ")} د.ج`;
+      }
+      const converted = amount;
+      return `${converted.toLocaleString(locale === "fr" ? "fr-FR" : locale === "it" ? "it-IT" : locale === "ar" ? "ar-EG" : "en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      })}`;
+      })} €`;
     };
-  }, [currency, locale]);
+  }, [currency, locale, region]);
 
   const value = useMemo(
-    () => ({ locale, setLocale, currency, setCurrency, t, formatPrice }),
-    [locale, currency, t, formatPrice]
+    () => ({ locale, setLocale, currency, setCurrency, region: region || "europe", setRegion, t, formatPrice }),
+    [locale, currency, region, t, formatPrice]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
@@ -255,10 +374,12 @@ export const useI18n = () => {
     return {
       locale: "en" as Locale,
       setLocale: () => {},
-      currency: "USD" as Currency,
+      currency: "EUR" as Currency,
       setCurrency: () => {},
+      region: "europe" as Region,
+      setRegion: () => {},
       t: (key: string) => key,
-      formatPrice: (amount: number) => `$${amount.toFixed(2)}`,
+      formatPrice: (amount: number) => `€${amount.toFixed(2)}`,
     };
   }
   return ctx;

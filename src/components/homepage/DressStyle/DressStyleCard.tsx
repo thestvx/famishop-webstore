@@ -13,11 +13,13 @@ const DressStyleCard = ({ title, url, className }: DressStyleCardProps) => {
     <Link
       href={url}
       className={cn([
-        "w-full h-[190px] md:h-full rounded-[20px] bg-white bg-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-start py-4 md:py-[25px] px-5 md:px-9 bg-no-repeat bg-cover relative overflow-hidden",
+        "w-full h-[190px] md:h-full rounded-[20px] bg-white bg-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-start bg-no-repeat bg-cover relative overflow-hidden",
         className,
       ])}
     >
-      <span className="relative z-10">{title}</span>
+      <span className="absolute top-4 md:top-6 start-5 md:start-9 z-10 inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white/60 backdrop-blur-sm border border-white/40 shadow-sm text-black">
+        {title}
+      </span>
     </Link>
   );
 };
