@@ -32,14 +32,22 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#F5F5F5]">
+      <div className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5] gap-3">
         <div className="w-8 h-8 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+        <p className="text-sm text-black/50">Loading...</p>
       </div>
     );
   }
 
   if (!user || user.uid !== ADMIN_UID) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5] gap-3">
+        <p className="text-sm text-black/50">Redirecting to login...</p>
+        <a href="/admin/login" className="text-sm font-medium underline">
+          Go to login
+        </a>
+      </div>
+    );
   }
 
   return <>{children}</>;
