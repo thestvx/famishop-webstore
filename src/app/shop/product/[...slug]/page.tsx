@@ -16,6 +16,16 @@ const data: Product[] = [
   ...relatedProductData,
 ];
 
+export async function generateStaticParams() {
+  const uniqueProducts = Array.from(
+    new Map(data.map((product) => [product.id, product])).values()
+  );
+
+  return uniqueProducts.map((product) => ({
+    slug: [String(product.id)],
+  }));
+}
+
 export default function ProductPage({
   params,
 }: {
