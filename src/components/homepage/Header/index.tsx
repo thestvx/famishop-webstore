@@ -23,7 +23,7 @@ const Header = () => {
             transition={{ duration: 0.6 }}
             className={cn([
               integralCF.className,
-              "text-4xl lg:text-[64px] lg:leading-[64px] mb-5 lg:mb-8",
+              "text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] leading-[1.05] sm:leading-[1.05] lg:leading-[1.02] xl:leading-[64px] mb-5 lg:mb-8 max-w-[600px]",
             ])}
           >
             {t("home.heroTitle")}

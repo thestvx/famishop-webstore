@@ -78,29 +78,29 @@ const TopNavbar = () => {
   const { region, setRegion } = useI18n() as any;
   const data = getData(t);
   return (
-    <nav className="sticky top-0 bg-white z-20">
-      <div className="flex relative max-w-frame mx-auto items-center justify-between md:justify-start py-4 md:py-5 px-4 xl:px-0 gap-2 lg:gap-4">
-        <div className="flex items-center">
+    <nav className="sticky top-0 bg-white z-20 border-b border-black/5">
+      <div className="flex relative max-w-[1280px] mx-auto items-center justify-between lg:justify-start py-3 md:py-4 lg:py-5 px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 lg:gap-6">
+        <div className="flex items-center min-w-[120px] sm:min-w-[160px] lg:min-w-[200px]">
           <div className="block md:hidden mr-2 rtl:ml-2 rtl:mr-0">
             <ResTopNavbar data={data} />
           </div>
           <Link
             href="/"
-            className="flex items-center mr-4 lg:mr-12 rtl:ml-4 lg:rtl:ml-12 rtl:mr-0"
+            className="flex items-center"
             aria-label="Famishop home"
           >
             <Image
               src="/images/Famishoplogo02.png"
               alt="Famishop"
-              width={340}
-              height={102}
+              width={360}
+              height={108}
               priority
-              className="h-[72px] w-auto sm:h-20 md:h-24 lg:h-[104px] xl:h-[116px] object-contain flex-shrink-0"
+              className="h-[52px] w-auto sm:h-[60px] md:h-[68px] lg:h-[76px] xl:h-[84px] object-contain flex-shrink-0"
             />
           </Link>
         </div>
-        <NavigationMenu className="hidden md:flex mr-2 lg:mr-7">
-          <NavigationMenuList>
+        <NavigationMenu className="hidden md:flex flex-1 min-w-0">
+          <NavigationMenuList className="gap-2 lg:gap-4 xl:gap-6">
             {data.map((item) => (
               <React.Fragment key={item.id}>
                 {item.type === "MenuItem" && (
@@ -113,7 +113,7 @@ const TopNavbar = () => {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <InputGroup className="hidden md:flex bg-[#F0F0F0] mr-3 lg:mr-10">
+        <InputGroup className="hidden lg:flex bg-[#F0F0F0] max-w-[360px] xl:max-w-[420px] flex-1">
           <InputGroup.Text>
             <Image
               priority
@@ -131,8 +131,8 @@ const TopNavbar = () => {
             className="bg-transparent placeholder:text-black/40"
           />
         </InputGroup>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="hidden lg:flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
+          <div className="hidden xl:flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -141,7 +141,7 @@ const TopNavbar = () => {
                   window.location.reload();
                 }
               }}
-              className="text-sm px-2 py-1 rounded-md hover:bg-gray-100"
+              className="text-sm px-2 py-1 rounded-md hover:bg-gray-100 whitespace-nowrap"
             >
               {region === "algeria" ? "Algérie" : "Europe"}
             </button>

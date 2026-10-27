@@ -334,7 +334,16 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 
   const t = useMemo(() => {
     return (key: string) => {
-      return translations[locale][key] || translations.en[key] || key;
+      if (translations[locale] && translations[locale][key]) {
+        return translations[locale][key];
+      }
+      if (translations.en && translations.en[key]) {
+        return translations.en[key];
+      }
+      if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+        console.warn(`Missing translation for key: ${key} (locale: ${locale})`);
+      }
+      return key;
     };
   }, [locale]);
 
