@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { integralCF } from "@/styles/fonts";
 import Link from "next/link";
 import React from "react";
 import { NavMenu } from "../navbar.types";
@@ -13,78 +12,88 @@ import Image from "next/image";
 import InputGroup from "@/components/ui/input-group";
 import ResTopNavbar from "./ResTopNavbar";
 import CartBtn from "./CartBtn";
+import LocaleSwitcher from "@/components/common/LocaleSwitcher";
+import CurrencySwitcher from "@/components/common/CurrencySwitcher";
+import { useTranslations } from "@/lib/i18n";
 
-const data: NavMenu = [
+const getData = (t: (key: string) => string): NavMenu => [
   {
     id: 1,
-    label: "Shop",
+    label: t("nav.shop"),
     type: "MenuList",
     children: [
       {
         id: 11,
-        label: "Men's clothes",
+        label: t("nav.mensClothes"),
         url: "/shop#men-clothes",
-        description: "In attractive and spectacular colors and designs",
+        description: t("nav.mensClothesDesc"),
       },
       {
         id: 12,
-        label: "Women's clothes",
+        label: t("nav.womensClothes"),
         url: "/shop#women-clothes",
-        description: "Ladies, your style and tastes are important to us",
+        description: t("nav.womensClothesDesc"),
       },
       {
         id: 13,
-        label: "Kids clothes",
+        label: t("nav.kidsClothes"),
         url: "/shop#kids-clothes",
-        description: "For all ages, with happy and beautiful colors",
+        description: t("nav.kidsClothesDesc"),
       },
       {
         id: 14,
-        label: "Bags and Shoes",
+        label: t("nav.bagsShoes"),
         url: "/shop#bag-shoes",
-        description: "Suitable for men, women and all tastes and styles",
+        description: t("nav.bagsShoesDesc"),
       },
     ],
   },
   {
     id: 2,
     type: "MenuItem",
-    label: "On Sale",
+    label: t("nav.onSale"),
     url: "/shop#on-sale",
     children: [],
   },
   {
     id: 3,
     type: "MenuItem",
-    label: "New Arrivals",
+    label: t("nav.newArrivals"),
     url: "/shop#new-arrivals",
     children: [],
   },
   {
     id: 4,
     type: "MenuItem",
-    label: "Brands",
+    label: t("nav.brands"),
     url: "/shop#brands",
     children: [],
   },
 ];
 
 const TopNavbar = () => {
+  const t = useTranslations();
+  const data = getData(t);
   return (
     <nav className="sticky top-0 bg-white z-20">
-      <div className="flex relative max-w-frame mx-auto items-center justify-between md:justify-start py-5 md:py-6 px-4 xl:px-0">
+      <div className="flex relative max-w-frame mx-auto items-center justify-between md:justify-start py-4 md:py-5 px-4 xl:px-0 gap-2 lg:gap-4">
         <div className="flex items-center">
-          <div className="block md:hidden mr-4">
+          <div className="block md:hidden mr-2">
             <ResTopNavbar data={data} />
           </div>
           <Link
             href="/"
-            className={cn([
-              integralCF.className,
-              "text-2xl lg:text-[32px] mb-2 mr-3 lg:mr-10",
-            ])}
+            className="flex items-center mr-2 lg:mr-6"
+            aria-label="Famishop home"
           >
-            SHOP.CO
+            <Image
+              src="/images/Famishoplogo.png"
+              alt="Famishop"
+              width={160}
+              height={48}
+              priority
+              className="h-9 w-auto md:h-10 lg:h-11 object-contain"
+            />
           </Link>
         </div>
         <NavigationMenu className="hidden md:flex mr-2 lg:mr-7">
@@ -119,8 +128,12 @@ const TopNavbar = () => {
             className="bg-transparent placeholder:text-black/40"
           />
         </InputGroup>
-        <div className="flex items-center">
-          <Link href="/search" className="block md:hidden mr-[14px] p-1">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="hidden lg:flex items-center gap-2">
+            <LocaleSwitcher />
+            <CurrencySwitcher />
+          </div>
+          <Link href="/search" className="block md:hidden mr-[10px] p-1">
             <Image
               priority
               src="/icons/search-black.svg"

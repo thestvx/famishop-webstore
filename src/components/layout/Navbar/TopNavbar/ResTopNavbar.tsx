@@ -9,8 +9,6 @@ import {
 } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { integralCF } from "@/styles/fonts";
 import { NavMenu } from "../navbar.types";
 import {
   Accordion,
@@ -18,6 +16,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import LocaleSwitcher from "@/components/common/LocaleSwitcher";
+import CurrencySwitcher from "@/components/common/CurrencySwitcher";
 
 const ResTopNavbar = ({ data }: { data: NavMenu }) => {
   return (
@@ -33,15 +33,25 @@ const ResTopNavbar = ({ data }: { data: NavMenu }) => {
         />
       </SheetTrigger>
       <SheetContent side="left" className="overflow-y-auto">
-        <SheetHeader className="mb-10">
+        <SheetHeader className="mb-8">
           <SheetTitle asChild>
             <SheetClose asChild>
-              <Link href="/" className={cn([integralCF.className, "text-2xl"])}>
-                SHOP.CO
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/images/Famishoplogo.png"
+                  alt="Famishop"
+                  width={150}
+                  height={44}
+                  className="h-9 w-auto object-contain"
+                />
               </Link>
             </SheetClose>
           </SheetTitle>
         </SheetHeader>
+        <div className="flex items-center gap-2 mb-6">
+          <LocaleSwitcher />
+          <CurrencySwitcher />
+        </div>
         <div className="flex flex-col items-start">
           {data.map((item) => (
             <React.Fragment key={item.id}>
