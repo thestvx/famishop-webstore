@@ -16,10 +16,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       setUser(u);
       setLoading(false);
       if (!u && pathname !== "/admin/login") {
-        window.location.href = "/admin/login";
+        setTimeout(() => { window.location.href = "/admin/login/"; }, 100);
       }
       if (u && u.uid !== ADMIN_UID && pathname !== "/admin/login") {
-        window.location.href = "/admin/login?error=notadmin";
+        setTimeout(() => { window.location.href = "/admin/login/?error=notadmin"; }, 100);
       }
     });
     return () => unsub();
