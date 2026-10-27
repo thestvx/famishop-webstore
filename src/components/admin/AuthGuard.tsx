@@ -16,15 +16,24 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       setUser(u);
       setLoading(false);
       if (!u && pathname !== "/admin/login") {
-        router.replace("/admin/login");
+        window.location.href = "/admin/login";
       }
       if (u && u.uid !== ADMIN_UID && pathname !== "/admin/login") {
-        // authenticated but not admin
-        router.replace("/admin/login?error=notadmin");
+        window.location.href = "/admin/login?error=notadmin";
       }
     });
     return () => unsub();
-  }, [router, pathname]);
+  }, [pathname]);
+
+  // Fallback redirect if onAuthStateChanged doesn't fire
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (loading) {
+        window.location.href = "/admin/login";
+      }
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   if (pathname === "/admin/login") {
     return <>{children}</>;
