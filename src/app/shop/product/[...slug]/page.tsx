@@ -22,7 +22,7 @@ export async function generateStaticParams() {
   );
 
   return uniqueProducts.map((product) => ({
-    slug: [String(product.id)],
+    slug: [String(product.id), product.title.split(" ").join("-")],
   }));
 }
 
