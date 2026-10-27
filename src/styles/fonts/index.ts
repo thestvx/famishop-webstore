@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 const integralCF = localFont({
   src: [
     {
-      path: "./pp-monument-black.otf",
+      path: "./nexa-black.otf",
       weight: "900",
       style: "normal",
     },
@@ -16,8 +16,13 @@ const integralCF = localFont({
 const satoshi = localFont({
   src: [
     {
-      path: "./pp-monument-regular.otf",
-      weight: "400",
+      path: "./nexa-light.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "./nexa-bold.otf",
+      weight: "700",
       style: "normal",
     },
   ],

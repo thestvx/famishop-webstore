@@ -60,13 +60,13 @@ export default function RootLayout({
           }}
         />
         <HolyLoader color="#868686" />
-        <TopBanner />
         <Providers>
+          <TopBanner />
           <RegionModal />
           <TopNavbar />
           {children}
+          <Footer />
         </Providers>
-        <Footer />
       </body>
     </html>
   );
