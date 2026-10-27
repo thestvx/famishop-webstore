@@ -11,7 +11,7 @@ const brandsData: { id: string; srcUrl: string }[] = [
   { id: "hm", srcUrl: "/icons/H&M.png" },
   { id: "okaidi", srcUrl: "/icons/Okaidi.png" },
   { id: "chicco", srcUrl: "/icons/Chicco.png" },
-  { id: "kiabi", srcUrl: "/icons/kiabi.png" },
+  { id: "kiabi", srcUrl: "/icons/Kiabi.png" },
 ];
 
 const Brands = () => {
