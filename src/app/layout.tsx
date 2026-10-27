@@ -1,14 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import { satoshi, thmanyahSans } from "@/styles/fonts";
-import TopBanner from "@/components/layout/Banner/TopBanner";
-import TopNavbar from "@/components/layout/Navbar/TopNavbar";
-import Footer from "@/components/layout/Footer";
 import HolyLoader from "holy-loader";
 import Providers from "./providers";
 import RegionModal from "@/components/common/RegionModal";
 import PixelPreloader from "@/components/common/PixelPreloader";
 import FirebaseAnalytics from "@/components/common/FirebaseAnalytics";
+import StorefrontShell from "@/components/layout/StorefrontShell";
 
 export const metadata: Metadata = {
   title: "Famishop",
@@ -65,11 +63,7 @@ export default function RootLayout({
         <Providers>
           <FirebaseAnalytics />
           <PixelPreloader />
-          <TopBanner />
-          <RegionModal />
-          <TopNavbar />
-          {children}
-          <Footer />
+          <StorefrontShell>{children}</StorefrontShell>
         </Providers>
       </body>
     </html>
