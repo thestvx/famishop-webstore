@@ -8,6 +8,7 @@ import HolyLoader from "holy-loader";
 import Providers from "./providers";
 import RegionModal from "@/components/common/RegionModal";
 import PixelPreloader from "@/components/common/PixelPreloader";
+import FirebaseAnalytics from "@/components/common/FirebaseAnalytics";
 
 export const metadata: Metadata = {
   title: "Famishop",
@@ -62,6 +63,7 @@ export default function RootLayout({
         />
         <HolyLoader color="#868686" />
         <Providers>
+          <FirebaseAnalytics />
           <PixelPreloader />
           <TopBanner />
           <RegionModal />
