@@ -42,9 +42,9 @@ const ResTopNavbar = ({ data }: { data: NavMenu }) => {
                 <Image
                   src="/images/Famishoplogo.png"
                   alt="Famishop"
-                  width={150}
-                  height={44}
-                  className="h-9 w-auto object-contain"
+                  width={170}
+                  height={50}
+                  className="h-10 w-auto object-contain"
                 />
               </Link>
             </SheetClose>

@@ -166,9 +166,12 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
       if (currency === "DZD") {
         return `${Math.round(converted).toLocaleString("fr-DZ")} ${symbol}`;
       }
-      return `${symbol}${converted.toFixed(2)}`;
+      return `${symbol}${converted.toLocaleString(locale === "en" ? "en-US" : locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
     };
-  }, [currency]);
+  }, [currency, locale]);
 
   const value = useMemo(
     () => ({ locale, setLocale, currency, setCurrency, t, formatPrice }),

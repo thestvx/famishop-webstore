@@ -19,33 +19,35 @@ const CurrencySwitcher = () => {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-black/10 hover:bg-black/5 transition-colors text-sm"
+        className="flex items-center gap-1.5 h-9 px-2.5 rounded-full border border-black/10 hover:bg-black/5 transition-colors text-sm whitespace-nowrap"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span>{current.symbol}</span>
-        <span className="hidden sm:inline">{current.code}</span>
-        <span className="sm:hidden">{current.code}</span>
+        <span className="w-4 text-center">{current.symbol}</span>
+        <span>{current.code}</span>
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-white border border-black/10 rounded-lg shadow-lg overflow-hidden z-50">
-          {currencies.map((c) => (
-            <button
-              key={c.code}
-              onClick={() => {
-                setCurrency(c.code);
-                setOpen(false);
-              }}
-              className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-black/5",
-                currency === c.code && "bg-black/5 font-medium"
-              )}
-            >
-              <span className="w-5 text-center">{c.symbol}</span>
-              <span>{c.label}</span>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-2 w-52 bg-white border border-black/10 rounded-lg shadow-lg overflow-hidden z-50">
+            {currencies.map((c) => (
+              <button
+                key={c.code}
+                onClick={() => {
+                  setCurrency(c.code);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-black/5",
+                  currency === c.code && "bg-black/5 font-medium"
+                )}
+              >
+                <span className="w-5 text-center">{c.symbol}</span>
+                <span>{c.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

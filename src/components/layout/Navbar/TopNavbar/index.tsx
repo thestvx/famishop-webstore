@@ -91,10 +91,10 @@ const TopNavbar = () => {
             <Image
               src="/images/Famishoplogo.png"
               alt="Famishop"
-              width={160}
-              height={48}
+              width={180}
+              height={54}
               priority
-              className="h-9 w-auto md:h-10 lg:h-11 object-contain"
+              className="h-10 w-auto sm:h-11 md:h-12 lg:h-14 object-contain"
             />
           </Link>
         </div>
