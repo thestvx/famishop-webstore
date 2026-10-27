@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import React from "react";
@@ -124,7 +126,7 @@ const TopNavbar = () => {
           <InputGroup.Input
             type="search"
             name="search"
-            placeholder="Search for products..."
+            placeholder={t("common.searchPlaceholder")}
             className="bg-transparent placeholder:text-black/40"
           />
         </InputGroup>
