@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n";
 const NewsLetterSection = () => {
   const { t } = useI18n();
   return (
-    <div className="relative grid grid-cols-1 md:grid-cols-2 max-w-frame mx-auto bg-black rounded-[20px] px-6 sm:px-10 lg:px-16 py-9 md:py-11">
+    <div className="relative grid grid-cols-1 md:grid-cols-2 max-w-frame mx-auto bg-black rounded-[20px] px-6 sm:px-10 lg:px-16 py-9 md:py-11 animate-[newsletterFloat_5s_ease-in-out_infinite] motion-reduce:animate-none">
       <p
         className={cn([
           integralCF.className,

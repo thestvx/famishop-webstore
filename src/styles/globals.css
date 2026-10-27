@@ -100,3 +100,8 @@ html[dir="rtl"] {
 html[dir="ltr"] {
   direction: ltr;
 }
+
+@keyframes newsletterFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}

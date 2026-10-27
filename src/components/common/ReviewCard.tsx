@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { IoIosCheckmarkCircle } from "react-icons/io";
 import { Review } from "@/types/review.types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 type ReviewCardProps = {
   blurChild?: React.ReactNode;
@@ -21,6 +22,7 @@ const ReviewCard = ({
   data,
   className,
 }: ReviewCardProps) => {
+  const { t } = useI18n();
   return (
     <div
       className={cn([
@@ -49,9 +51,9 @@ const ReviewCard = ({
       </div>
       <p className="text-sm sm:text-base text-black/60">{data.content}</p>
       {isDate && (
-        <p className="text-black/60 text-sm font-medium mt-4 sm:mt-6">
-          Posted on {data.date}
-        </p>
+          <p className="text-black/60 text-sm font-medium mt-4 sm:mt-6">
+            {t("reviews.postedOn")} {data.date}
+          </p>
       )}
     </div>
   );
