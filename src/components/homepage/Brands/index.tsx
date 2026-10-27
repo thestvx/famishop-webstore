@@ -7,11 +7,11 @@ const brandsData: { id: string; srcUrl: string }[] = [
   { id: "gucci", srcUrl: "/icons/gucci-logo.svg" },
   { id: "prada", srcUrl: "/icons/prada-logo.svg" },
   { id: "calvin-klein", srcUrl: "/icons/calvin-klein-logo.svg" },
-  { id: "mayoral", srcUrl: "/icons/mayoral-logo.svg" },
-  { id: "hm", srcUrl: "/icons/hm-logo.svg" },
-  { id: "okaidi", srcUrl: "/icons/okaidi-logo.svg" },
-  { id: "chicco", srcUrl: "/icons/chicco-logo.svg" },
-  { id: "kiabi", srcUrl: "/icons/kiabi-logo.svg" },
+  { id: "mayoral", srcUrl: "/icons/Mayoral.png" },
+  { id: "hm", srcUrl: "/icons/H&M.png" },
+  { id: "okaidi", srcUrl: "/icons/Okaidi.png" },
+  { id: "chicco", srcUrl: "/icons/Chicco.png" },
+  { id: "kiabi", srcUrl: "/icons/kiabi.png" },
 ];
 
 const Brands = () => {
@@ -28,7 +28,7 @@ const Brands = () => {
               height={0}
               width={0}
               alt={brand.id}
-              className="h-auto w-auto max-w-[116px] lg:max-w-48 max-h-[26px] lg:max-h-9 my-5 md:my-11 shrink-0"
+              className="h-[26px] lg:h-9 w-auto max-w-[116px] lg:max-w-48 my-5 md:my-11 shrink-0 object-contain"
             />
           ))}
         </div>
