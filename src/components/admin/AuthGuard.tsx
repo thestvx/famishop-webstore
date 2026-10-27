@@ -15,10 +15,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const unsub = onAuthStateChanged(firebaseAuth, (u) => {
       setUser(u);
       setLoading(false);
-      if (!u && pathname !== "/admin/login") {
+      const isLogin = pathname.replace(/\/$/, "") === "/admin/login";
+      if (!u && !isLogin) {
         setTimeout(() => { window.location.href = "/admin/login/"; }, 100);
       }
-      if (u && u.uid !== ADMIN_UID && pathname !== "/admin/login") {
+      if (u && u.uid !== ADMIN_UID && !isLogin) {
         setTimeout(() => { window.location.href = "/admin/login/?error=notadmin"; }, 100);
       }
     });
@@ -35,7 +36,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [loading]);
 
-  if (pathname === "/admin/login") {
+  const isLoginPage = pathname.replace(/\/$/, "") === "/admin/login";
+  if (isLoginPage) {
     return <>{children}</>;
   }
 
