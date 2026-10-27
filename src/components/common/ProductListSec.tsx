@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import * as motion from "framer-motion/client";
 import { cn } from "@/lib/utils";
@@ -10,6 +12,7 @@ import {
 import ProductCard from "./ProductCard";
 import { Product } from "@/types/product.types";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 type ProductListSecProps = {
   title: string;
@@ -18,6 +21,7 @@ type ProductListSecProps = {
 };
 
 const ProductListSec = ({ title, data, viewAllLink }: ProductListSecProps) => {
+  const { t } = useI18n();
   return (
     <section className="max-w-frame mx-auto text-center">
       <motion.h2
@@ -30,7 +34,7 @@ const ProductListSec = ({ title, data, viewAllLink }: ProductListSecProps) => {
           "text-[32px] md:text-5xl mb-8 md:mb-14 capitalize",
         ])}
       >
-        {title}
+        {title.startsWith("section.") ? t(title) : title}
       </motion.h2>
       <motion.div
         initial={{ y: "100px", opacity: 0 }}
@@ -44,11 +48,11 @@ const ProductListSec = ({ title, data, viewAllLink }: ProductListSecProps) => {
           }}
           className="w-full mb-6 md:mb-9"
         >
-          <CarouselContent className="mx-4 xl:mx-0 space-x-4 sm:space-x-5">
+          <CarouselContent className="mx-4 xl:mx-0 -ml-2 sm:-ml-3">
             {data.map((product) => (
               <CarouselItem
                 key={product.id}
-                className="w-full max-w-[198px] sm:max-w-[295px] pl-0"
+                className="w-full basis-[60%] xs:basis-[48%] sm:basis-[45%] md:basis-[31%] lg:basis-[24%] pl-2 sm:pl-3"
               >
                 <ProductCard data={product} />
               </CarouselItem>
@@ -61,7 +65,7 @@ const ProductListSec = ({ title, data, viewAllLink }: ProductListSecProps) => {
               href={viewAllLink}
               className="w-full inline-block sm:w-[218px] px-[54px] py-4 border rounded-full hover:bg-black hover:text-white text-black transition-all font-medium text-sm sm:text-base border-black/10"
             >
-              View All
+              {t("common.viewAll")}
             </Link>
           </div>
         )}

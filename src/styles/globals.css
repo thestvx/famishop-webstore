@@ -91,3 +91,12 @@ html[dir="rtl"] body,
 html[dir="rtl"] * {
   font-family: var(--font-thmanyah), Tahoma, Arial, sans-serif !important;
 }
+
+html[dir="rtl"] {
+  direction: rtl;
+  text-align: start;
+}
+
+html[dir="ltr"] {
+  direction: ltr;
+}

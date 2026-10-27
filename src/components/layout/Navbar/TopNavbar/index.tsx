@@ -80,21 +80,21 @@ const TopNavbar = () => {
     <nav className="sticky top-0 bg-white z-20">
       <div className="flex relative max-w-frame mx-auto items-center justify-between md:justify-start py-4 md:py-5 px-4 xl:px-0 gap-2 lg:gap-4">
         <div className="flex items-center">
-          <div className="block md:hidden mr-2">
+          <div className="block md:hidden mr-2 rtl:ml-2 rtl:mr-0">
             <ResTopNavbar data={data} />
           </div>
           <Link
             href="/"
-            className="flex items-center mr-4 lg:mr-12"
+            className="flex items-center mr-4 lg:mr-12 rtl:ml-4 lg:rtl:ml-12 rtl:mr-0"
             aria-label="Famishop home"
           >
             <Image
               src="/images/Famishoplogo02.png"
               alt="Famishop"
-              width={320}
-              height={96}
+              width={340}
+              height={102}
               priority
-              className="h-16 w-auto sm:h-18 md:h-20 lg:h-[96px] xl:h-[108px] object-contain"
+              className="h-[72px] w-auto sm:h-20 md:h-24 lg:h-[104px] xl:h-[116px] object-contain"
             />
           </Link>
         </div>

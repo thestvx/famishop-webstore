@@ -29,7 +29,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
         />
       </div>
       <div className="flex flex-col flex-1">
-        <strong className="text-black xl:text-xl line-clamp-2 min-h-[3rem] xl:min-h-[3.25rem] leading-snug mb-1">
+        <strong className="text-black xl:text-xl line-clamp-2 min-h-[2.75rem] xl:min-h-[3.25rem] leading-snug mb-1">
           {data.title}
         </strong>
         <div className="flex items-center mb-1 xl:mb-2">
@@ -46,7 +46,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
             <span className="text-black/60">/5</span>
           </span>
         </div>
-        <div className="flex items-center flex-wrap gap-x-[5px] gap-y-1 xl:gap-x-2.5 mt-auto">
+        <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 xl:gap-x-2.5 mt-auto">
         {data.discount.percentage > 0 ? (
           <span className="font-bold text-black text-xl xl:text-2xl">
             {formatPrice(

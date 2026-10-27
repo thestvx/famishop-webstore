@@ -212,7 +212,7 @@ export default function Home() {
       <Brands />
       <main className="my-[50px] sm:my-[72px]">
         <ProductListSec
-          title="NEW ARRIVALS"
+          title="section.newArrivals"
           data={newArrivalsData}
           viewAllLink="/shop#new-arrivals"
         />
@@ -221,7 +221,7 @@ export default function Home() {
         </div>
         <div className="mb-[50px] sm:mb-20">
           <ProductListSec
-            title="top selling"
+            title="section.topSelling"
             data={topSellingData}
             viewAllLink="/shop#top-selling"
           />
