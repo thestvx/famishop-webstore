@@ -79,8 +79,8 @@ const TopNavbar = () => {
   const data = getData(t);
   return (
     <nav className="sticky top-0 bg-white z-20 border-b border-black/5">
-      <div className="flex relative max-w-[1280px] mx-auto items-center justify-between lg:justify-start py-3 md:py-4 lg:py-5 px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 lg:gap-6">
-        <div className="flex items-center min-w-[120px] sm:min-w-[160px] lg:min-w-[200px]">
+      <div className="flex relative max-w-[1380px] mx-auto items-center justify-between gap-2 sm:gap-3 lg:gap-6 py-2.5 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-6 xl:px-10">
+        <div className="flex items-center">
           <div className="block md:hidden mr-2 rtl:ml-2 rtl:mr-0">
             <ResTopNavbar data={data} />
           </div>
@@ -92,15 +92,15 @@ const TopNavbar = () => {
             <Image
               src="/images/Famishoplogo02.png"
               alt="Famishop"
-              width={360}
-              height={108}
+              width={380}
+              height={114}
               priority
-              className="h-[52px] w-auto sm:h-[60px] md:h-[68px] lg:h-[76px] xl:h-[84px] object-contain flex-shrink-0"
+              className="h-[56px] w-auto sm:h-[64px] md:h-[72px] lg:h-[80px] xl:h-[88px] object-contain flex-shrink-0"
             />
           </Link>
         </div>
-        <NavigationMenu className="hidden md:flex flex-1 min-w-0">
-          <NavigationMenuList className="gap-2 lg:gap-4 xl:gap-6">
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList className="gap-1 lg:gap-3 xl:gap-5">
             {data.map((item) => (
               <React.Fragment key={item.id}>
                 {item.type === "MenuItem" && (
@@ -113,7 +113,7 @@ const TopNavbar = () => {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <InputGroup className="hidden lg:flex bg-[#F0F0F0] max-w-[360px] xl:max-w-[420px] flex-1">
+        <InputGroup className="hidden lg:flex bg-[#F0F0F0] w-[320px] xl:w-[380px]">
           <InputGroup.Text>
             <Image
               priority

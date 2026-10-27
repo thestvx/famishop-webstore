@@ -22,9 +22,9 @@ const Header = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
             className={cn([
-              integralCF.className,
-              "text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] leading-[1.05] sm:leading-[1.05] lg:leading-[1.02] xl:leading-[64px] mb-5 lg:mb-8 max-w-[600px]",
-            ])}
+            integralCF.className,
+            "text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] leading-[1.06] sm:leading-[1.05] lg:leading-[1.02] xl:leading-[64px] mb-5 lg:mb-8 max-w-[620px] tracking-tight",
+          ])}
           >
             {t("home.heroTitle")}
           </motion.h2>
