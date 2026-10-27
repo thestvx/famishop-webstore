@@ -67,15 +67,16 @@ const Footer = () => {
       <div className="pt-8 md:pt-[50px] bg-[#F0F0F0] px-4 pb-4">
         <div className="max-w-frame mx-auto">
           <nav className="lg:grid lg:grid-cols-12 mb-8">
-            <div className="flex flex-col lg:col-span-3 lg:max-w-[248px]">
-              <h1
-                className={cn([
-                  integralCF.className,
-                  "text-[28px] lg:text-[32px] mb-6",
-                ])}
-              >
-                SHOP.CO
-              </h1>
+            <div className="flex flex-col lg:col-span-3 lg:max-w-[260px]">
+              <Link href="/" className="mb-6">
+                <Image
+                  src="/images/Famishoplogo.png"
+                  alt="Famishop"
+                  width={170}
+                  height={50}
+                  className="h-10 w-auto object-contain"
+                />
+              </Link>
               <p className="text-black/60 text-sm mb-9">
                 We have clothes that suits your style and which you’re proud to
                 wear. From women to men.
@@ -103,20 +104,14 @@ const Footer = () => {
           <hr className="h-[1px] border-t-black/10 mb-6" />
           <div className="flex flex-col sm:flex-row justify-center sm:justify-between items-center mb-2">
             <p className="text-sm text-center sm:text-left text-black/60 mb-4 sm:mb-0 sm:mr-1">
-              Shop.co © Made by{" "}
+              Famishop © Developed by{" "}
               <Link
-                href="https://github.com/mohammadoftadeh"
+                href="https://stvx.space"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-black font-medium"
               >
-                Mohammad Oftadeh
-              </Link>
-              {", "}
-              Designed by{" "}
-              <Link
-                href="https://www.figma.com/@hamzauix"
-                className="text-black font-medium"
-              >
-                Hamza Naeem
+                STVX
               </Link>
             </p>
             <div className="flex items-center">

@@ -86,3 +86,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+html[dir="rtl"] body {
+  font-family: var(--font-thmanyah), var(--font-satoshi), system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+}
