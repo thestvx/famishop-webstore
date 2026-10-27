@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
@@ -46,6 +49,11 @@ export const AdminSidebar = ({
   setMobileOpen: (v: boolean) => void;
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const handleLogout = async () => {
+    await signOut(firebaseAuth);
+    router.replace("/admin/login");
+  };
 
   return (
     <>
@@ -117,11 +125,34 @@ export const AdminSidebar = ({
             );
           })}
         </nav>
-        {!collapsed && (
-          <div className="p-4 border-t border-black/10 text-xs text-black/40">
-            FamiShop Admin
-          </div>
-        )}
+        <div className="p-3 border-t border-black/10">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={cn(
+              "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors",
+              collapsed && "justify-center"
+            )}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            {!collapsed && <span>Sign Out</span>}
+          </button>
+        </div>
       </aside>
     </>
   );

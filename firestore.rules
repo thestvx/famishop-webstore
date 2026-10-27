@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Admin UID check
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == "gLc031y0CJOwkD4SQW3D7k3Z6CX2";
+    }
+
+    // Products: public read, admin write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Categories: public read, admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: admin only (customers can create their own)
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Customers: admin only
+    match /customers/{customerId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Settings: admin only
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -14,6 +16,8 @@ const firebaseConfig = {
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 export const firebaseApp = app;
+export const firebaseAuth = getAuth(app);
+export const firestore = getFirestore(app);
 
 export async function initAnalytics() {
   if (typeof window === "undefined") return null;
@@ -21,3 +25,5 @@ export async function initAnalytics() {
   if (!supported) return null;
   return getAnalytics(app);
 }
+
+export const ADMIN_UID = "gLc031y0CJOwkD4SQW3D7k3Z6CX2";
