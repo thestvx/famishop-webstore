@@ -126,16 +126,26 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [condition, setCondition] = useState("");
   const [colors, setColors] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
+  const [rates, setRates] = useState<{ USD: number; EUR: number; DZD: number }>({ USD: 1.08, EUR: 1, DZD: 145 });
   const [priceUsd, setPriceUsd] = useState("");
   const [priceEur, setPriceEur] = useState("");
   const [priceDzd, setPriceDzd] = useState("");
   const price = priceEur || priceUsd || priceDzd;
   const [packageSize, setPackageSize] = useState("");
 
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [dirty, setDirty] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(false);
+  useEffect(() => {
+    fetch("/api/exchange-rate")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d) setRates({ USD: d.USD || 1.08, EUR: 1, DZD: d.DZD || 145 });
+      })
+      .catch(() => {});
+  }, []);
   const dragIndex = useRef<number | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -346,7 +356,16 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   };
 
   const closeEditor = () => {
-    if (dirty && !confirm(t("addProduct.unsavedChanges"))) return;
+    if (dirty) {
+      setConfirmCloseOpen(true);
+      return;
+    }
+    if (embedded && onClose) onClose();
+    else router.push("/admin/products");
+  };
+  const confirmClose = () => {
+    setConfirmCloseOpen(false);
+    setDirty(false);
     if (embedded && onClose) onClose();
     else router.push("/admin/products");
   };
@@ -510,7 +529,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             {t("addProduct.browsing")}
           </div>
         )}
-        <div className="mt-2 max-h-[60vh] overflow-y-auto">
+        <div className="mt-2 ">
           {list.map((item, idx) => {
             const node = item.node;
             const hasChildren = !!node.children && node.children.length > 0;
@@ -540,7 +559,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "size") {
     return (
       <ScreenShell ref={topRef} title={t("addProduct.size")} onBack={() => setView("main")}>
-        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 space-y-4 ">
           <div>
             <div className="text-sm font-semibold mb-2">{t("addProduct.clothingSizes")}</div>
             <div className="grid grid-cols-3 gap-3">
@@ -590,7 +609,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "condition") {
     return (
       <ScreenShell ref={topRef} title={t("addProduct.condition")} onBack={() => setView("main")}>
-        <div className="p-2 max-h-[60vh] overflow-y-auto">
+        <div className="p-2 ">
           {CONDITIONS.map((c) => (
             <button
               key={c.value}
@@ -622,7 +641,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     };
     return (
       <ScreenShell ref={topRef} title={t("addProduct.colors")} onBack={() => setView("main")}>
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 ">
           <div className="text-sm font-semibold mb-2">{t("addProduct.suggestedColors")}</div>
           <div className="flex flex-wrap gap-3 mb-6">
             {COLORS.slice(0, 6).map((c) => (
@@ -667,7 +686,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     };
     return (
       <ScreenShell ref={topRef} title={t("addProduct.material")} onBack={() => setView("main")}>
-        <div className="p-2 max-h-[60vh] overflow-y-auto">
+        <div className="p-2 ">
           {MATERIALS.map((m) => (
             <button
               key={m}
@@ -764,7 +783,16 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               inputMode="decimal"
               value={priceEur}
               onChange={(e) => {
-                setPriceEur(e.target.value);
+                const v = e.target.value;
+                setPriceEur(v);
+                const n = Number(v);
+                if (!isNaN(n) && v !== "") {
+                  setPriceUsd((n * rates.USD).toFixed(2));
+                  setPriceDzd(Math.round(n * rates.DZD).toString());
+                } else {
+                  setPriceUsd("");
+                  setPriceDzd("");
+                }
                 markDirty();
               }}
               placeholder="0.00"
@@ -801,7 +829,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "package") {
     return (
       <ScreenShell ref={topRef} title={t("addProduct.packageSize")} onBack={() => setView("main")}>
-        <div className="p-2 max-h-[60vh] overflow-y-auto">
+        <div className="p-2 ">
           {PACKAGE_SIZES.map((p) => (
             <button
               key={p.value}
@@ -1057,6 +1085,27 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           </button>
         </div>
 
+        {confirmCloseOpen && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
+              <p className="text-sm mb-4">{t("addProduct.unsavedChanges")}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmCloseOpen(false)}
+                  className="flex-1 px-4 py-2 rounded-lg border border-black/10 text-sm"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  onClick={confirmClose}
+                  className="flex-1 px-4 py-2 rounded-lg bg-black text-white text-sm"
+                >
+                  {t("common.confirm")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {saving && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
             <div className="bg-white rounded-xl px-6 py-4 flex items-center gap-3 shadow-xl">

@@ -15,6 +15,7 @@ type Prod = {
   rating?: number;
   gallery?: string[];
   created_at?: string;
+  status?: string;
 };
 
 export default function AdminProductsPage() {
@@ -52,6 +53,17 @@ export default function AdminProductsPage() {
     if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
     if (!isSupabaseConfigured() || !supabase || !p.id) return;
     const { error } = await supabase.from("products").delete().eq("id", p.id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    await load();
+  }
+
+﻿  async function toggleActive(p: Prod) {
+    if (!isSupabaseConfigured() || !supabase || !p.id) return;
+    const next = p.status === "draft" ? "published" : "draft";
+    const { error } = await supabase.from("products").update({ status: next }).eq("id", p.id);
     if (error) {
       alert(error.message);
       return;
@@ -115,6 +127,9 @@ export default function AdminProductsPage() {
                       <div className="flex items-center gap-2">
                         <button onClick={() => { setEditId(p.id); setEditorOpen(true); }} className="p-1.5 rounded hover:bg-gray-100" aria-label="edit">
                           <Pencil size={16} />
+                        </button>
+                        <button onClick={() => toggleActive(p)} className="p-1.5 rounded hover:bg-gray-100 text-sm" aria-label="toggle">
+                          {p.status === "draft" ? "Activate" : "Deactivate"}
                         </button>
                         <button onClick={() => remove(p)} className="p-1.5 rounded hover:bg-gray-100 text-red-500" aria-label="delete">
                           <Trash2 size={16} />

@@ -7,10 +7,13 @@ export async function GET() {
     const res = await fetch(`https://v6.exchangerate-api.com/v6/${KEY}/latest/EUR`);
     if (!res.ok) throw new Error("Exchange rate request failed");
     const data = await res.json();
-    const rate = data?.conversion_rates?.DZD;
-    if (!rate) throw new Error("DZD rate not found");
-    return NextResponse.json({ rate });
+    const rates = data?.conversion_rates || {};
+    return NextResponse.json({
+      USD: rates.USD || 1.08,
+      EUR: 1,
+      DZD: rates.DZD || 145,
+    });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Failed", rate: 145 }, { status: 200 });
+    return NextResponse.json({ USD: 1.08, EUR: 1, DZD: 145, error: e?.message }, { status: 200 });
   }
 }
