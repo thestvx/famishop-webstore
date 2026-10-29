@@ -64,9 +64,7 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-sm text-black/50">
-            {isSupabaseConfigured() ? "Connected to Supabase" : "Supabase not configured"}
-          </p>
+          <p className="text-sm text-black/50">Products</p>
         </div>
         <button
           type="button"
@@ -98,7 +96,7 @@ export default function AdminProductsPage() {
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td className="py-3 px-4 text-black/50" colSpan={5}>No products found in database.</td>
+                  <td className="py-3 px-4 text-black/50" colSpan={5}>No products found.</td>
                 </tr>
               ) : (
                 products.map((p) => (
@@ -145,7 +143,7 @@ export default function AdminProductsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
+              className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto scroll-smooth shadow-2xl"
             >
               <ProductEditor
                 embedded

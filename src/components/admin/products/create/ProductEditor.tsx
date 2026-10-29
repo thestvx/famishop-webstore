@@ -116,7 +116,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [title, setTitle] = useState("");
   const [titleTranslations, setTitleTranslations] = useState<Record<string, string>>({});
   const [description, setDescription] = useState("");
-  const [enabledDescLangs, setEnabledDescLangs] = useState<string[]>([]);
+  const [enabledDescLangs, setEnabledDescLangs] = useState<string[]>(["en", "fr", "ar", "it"]);
   const [descTranslations, setDescTranslations] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [categoryPathNames, setCategoryPathNames] = useState<string[]>([]);
@@ -137,6 +137,11 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [dirty, setDirty] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const dragIndex = useRef<number | null>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [view]);
 
   useEffect(() => {
     if (!editId || !isSupabaseConfigured() || !supabase) return;
@@ -369,6 +374,35 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     setSaving(true);
     setMsg("");
     try {
+      // Auto-translate enabled languages if missing
+      const newDesc = { ...descTranslations };
+      const newTitle = { ...titleTranslations };
+      for (const code of enabledDescLangs) {
+        if (title.trim() && !newTitle[code]) {
+          try {
+            const res = await fetch("/api/translate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: title, source: "auto", target: code }),
+            });
+            const data = await res.json();
+            if (data?.translated) newTitle[code] = data.translated;
+          } catch {}
+        }
+        if (description.trim() && !newDesc[code]) {
+          try {
+            const res = await fetch("/api/translate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: description, source: "auto", target: code }),
+            });
+            const data = await res.json();
+            if (data?.translated) newDesc[code] = data.translated;
+          } catch {}
+        }
+      }
+      setDescTranslations(newDesc);
+      setTitleTranslations(newTitle);
       const doneImages = images.filter((i) => i.status === "done");
       const urls = doneImages.map((i) => i.url);
       const ids = doneImages.map((i) => i.publicId);
@@ -376,10 +410,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
       const fullPayload: any = {
         title: title.trim(),
-        title_translations: titleTranslations,
+        title_translations: newTitle,
         status: publishStatus,
         description: description.trim() || null,
-        description_translations: descTranslations,
+        description_translations: newDesc,
         price: Number(price || 0),
         prices: {
           USD: priceUsd ? Number(priceUsd) : null,
@@ -462,7 +496,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "category") {
     const list = filteredCategories;
     return (
-      <ScreenShell title={t("addProduct.category")} onBack={categorySearch.trim() ? () => setCategorySearch("") : goBackCategory}>
+      <ScreenShell ref={topRef} title={t("addProduct.category")} onBack={categorySearch.trim() ? () => setCategorySearch("") : goBackCategory}>
         <div className="px-4 pt-3">
           <input
             value={categorySearch}
@@ -505,7 +539,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   if (view === "size") {
     return (
-      <ScreenShell title={t("addProduct.size")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.size")} onBack={() => setView("main")}>
         <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
           <div>
             <div className="text-sm font-semibold mb-2">{t("addProduct.clothingSizes")}</div>
@@ -555,7 +589,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   if (view === "condition") {
     return (
-      <ScreenShell title={t("addProduct.condition")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.condition")} onBack={() => setView("main")}>
         <div className="p-2 max-h-[60vh] overflow-y-auto">
           {CONDITIONS.map((c) => (
             <button
@@ -587,7 +621,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       markDirty();
     };
     return (
-      <ScreenShell title={t("addProduct.colors")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.colors")} onBack={() => setView("main")}>
         <div className="p-4 max-h-[60vh] overflow-y-auto">
           <div className="text-sm font-semibold mb-2">{t("addProduct.suggestedColors")}</div>
           <div className="flex flex-wrap gap-3 mb-6">
@@ -632,7 +666,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       markDirty();
     };
     return (
-      <ScreenShell title={t("addProduct.material")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.material")} onBack={() => setView("main")}>
         <div className="p-2 max-h-[60vh] overflow-y-auto">
           {MATERIALS.map((m) => (
             <button
@@ -664,7 +698,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "brand") {
     const filteredBrands = BRANDS.filter((b) => b.toLowerCase().includes(brandSearch.toLowerCase()));
     return (
-      <ScreenShell title={t("addProduct.brand")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.brand")} onBack={() => setView("main")}>
         <div className="p-4">
           <input
             value={brandSearch}
@@ -707,7 +741,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   if (view === "price") {
     return (
-      <ScreenShell title={t("addProduct.price")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.price")} onBack={() => setView("main")}>
         <div className="p-6 space-y-4">
           <div>
             <label className="text-sm text-black/50 mb-1 block">USD ($)</label>
@@ -766,7 +800,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   if (view === "package") {
     return (
-      <ScreenShell title={t("addProduct.packageSize")} onBack={() => setView("main")}>
+      <ScreenShell ref={topRef} title={t("addProduct.packageSize")} onBack={() => setView("main")}>
         <div className="p-2 max-h-[60vh] overflow-y-auto">
           {PACKAGE_SIZES.map((p) => (
             <button
@@ -794,7 +828,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   // ---------- main ----------
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
+    <div ref={topRef} className="min-h-screen bg-[#F5F5F5] scroll-smooth">
       <header className="bg-white border-b border-black/10 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center">
           <button onClick={closeEditor} className="flex items-center gap-1 text-sm" aria-label="Back">
@@ -986,27 +1020,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
                   );
                 })}
               </div>
-              {enabledDescLangs.length > 0 && (
-                <div className="mt-3 space-y-3">
-                  {enabledDescLangs.map((code) => {
-                    const lang = DESC_LANGS.find((l) => l.code === code);
-                    return (
-                      <div key={code}>
-                        <label className="text-sm text-black/70">{lang?.label}</label>
-                        <textarea
-                          value={descTranslations[code] || ""}
-                          onChange={(e) => {
-                            setDescTranslations((prev) => ({ ...prev, [code]: e.target.value }));
-                            markDirty();
-                          }}
-                          rows={4}
-                          className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10 resize-none"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {enabledDescLangs.length > 0 && null}
             </div>
           </div>
         </section>
@@ -1020,7 +1034,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           <Row label={t("addProduct.condition")} value={condition ? t(`cond.${condition}`) : ""} onClick={() => setView("condition")} />
           <Row label={t("addProduct.colors")} value={colors.map((c) => t(`color.${c}`)).join(", ")} onClick={() => setView("color")} />
           <Row label={t("addProduct.material")} value={materials.map((m) => t(`material.${m}`)).join(", ")} onClick={() => setView("material")} />
-          <Row label={t("addProduct.price")} value={price ? `${price} ${currency}` : ""} onClick={() => setView("price")} />
+          <Row label={t("addProduct.price")} value={[priceUsd && `${priceUsd} USD`, priceEur && `${priceEur} EUR`, priceDzd && `${priceDzd} DZD`].filter(Boolean).join(" / ")} onClick={() => setView("price")} />
           <Row label={t("addProduct.packageSize")} value={packageSize ? t(`pkg.${packageSize}`) : ""} onClick={() => setView("package")} />
         </section>
 
@@ -1056,24 +1070,27 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   );
 }
 
-function ScreenShell({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
-  const { t } = useI18n();
-  return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      <header className="bg-white border-b border-black/10 sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center">
-          <button onClick={onBack} className="flex items-center gap-1 text-sm" aria-label="Back">
-            <ChevronLeft size={20} />
-            <span>{t("common.back")}</span>
-          </button>
-          <div className="flex-1 text-center text-base font-semibold">{title}</div>
-          <div className="w-14" />
-        </div>
-      </header>
-      <main className="max-w-2xl mx-auto pb-28">{children}</main>
-    </div>
-  );
-}
+const ScreenShell = React.forwardRef<HTMLDivElement, { title: string; onBack: () => void; children: React.ReactNode }>(
+  ({ title, onBack, children }, ref) => {
+    const { t } = useI18n();
+    return (
+      <div ref={ref} className="min-h-screen bg-[#F5F5F5] scroll-smooth">
+        <header className="bg-white border-b border-black/10 sticky top-0 z-40">
+          <div className="max-w-2xl mx-auto px-4 h-14 flex items-center">
+            <button onClick={onBack} className="flex items-center gap-1 text-sm" aria-label="Back">
+              <ChevronLeft size={20} />
+              <span>{t("common.back")}</span>
+            </button>
+            <div className="flex-1 text-center text-base font-semibold">{title}</div>
+            <div className="w-14" />
+          </div>
+        </header>
+        <main className="max-w-2xl mx-auto pb-28">{children}</main>
+      </div>
+    );
+  }
+);
+ScreenShell.displayName = "ScreenShell";
 
 function BottomBar({ children }: { children: React.ReactNode }) {
   return (

@@ -790,6 +790,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const [locale, setLocaleState] = useState<Locale>("en");
   const [region, setRegionState] = useState<Region | null>(null);
   const [currency, setCurrencyState] = useState<Currency>("EUR");
+  const [exchangeRate, setExchangeRate] = useState(145.0);
 
   useEffect(() => {
     setLocaleState(getInitialLocale());
@@ -824,11 +825,13 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
-      document.documentElement.lang = locale;
-    }
-  }, [locale]);
+    fetch("/api/exchange-rate")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.rate) setExchangeRate(d.rate);
+      })
+      .catch(() => {});
+  }, []);
 
   const t = useMemo(() => {
     return (key: string) => {
@@ -856,7 +859,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
         })}`;
       }
       if (currency === "DZD") {
-        const converted = amount * EXCHANGE_RATE_EUR_TO_DZD;
+        const converted = amount * exchangeRate;
         return `${Math.round(converted).toLocaleString("fr-DZ")} د.ج`;
       }
       const converted = amount;
@@ -865,7 +868,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
         maximumFractionDigits: 2,
       })} €`;
     };
-  }, [currency, locale, region]);
+  }, [currency, locale, region, exchangeRate]);
 
   const value = useMemo(
     () => ({ locale, setLocale, currency, setCurrency, region: region || "europe", setRegion, t, formatPrice }),
