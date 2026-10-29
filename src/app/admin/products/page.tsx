@@ -145,7 +145,7 @@ export default function AdminProductsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl w-full max-w-3xl h-[90vh] overflow-hidden shadow-2xl"
+              className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
             >
               <ProductEditor
                 embedded

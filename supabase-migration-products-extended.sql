@@ -1,5 +1,6 @@
 -- Run in Supabase SQL editor to support the redesigned product listing fields.
 alter table products add column if not exists description text;
+alter table products add column if not exists description_translations jsonb default '{}'::jsonb;
 alter table products add column if not exists category text;
 alter table products add column if not exists category_path text;
 alter table products add column if not exists brand text;

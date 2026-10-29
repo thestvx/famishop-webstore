@@ -66,6 +66,12 @@ const MATERIALS = [
   "Other",
 ];
 
+const PACKAGE_SIZES = [
+  { value: "small", titleKey: "pkg.small", descKey: "pkg.smallDesc" },
+  { value: "medium", titleKey: "pkg.medium", descKey: "pkg.mediumDesc" },
+  { value: "large", titleKey: "pkg.large", descKey: "pkg.largeDesc" },
+];
+
 const CONDITIONS = [
   { value: "newWithTags", titleKey: "cond.newWithTags", descKey: "cond.newWithTagsDesc" },
   { value: "newWithoutTags", titleKey: "cond.newWithoutTags", descKey: "cond.newWithoutTagsDesc" },
@@ -74,10 +80,13 @@ const CONDITIONS = [
   { value: "satisfactory", titleKey: "cond.satisfactory", descKey: "cond.satisfactoryDesc" },
 ];
 
-const PACKAGE_SIZES = [
-  { value: "small", titleKey: "pkg.small", descKey: "pkg.smallDesc" },
-  { value: "medium", titleKey: "pkg.medium", descKey: "pkg.mediumDesc" },
-  { value: "large", titleKey: "pkg.large", descKey: "pkg.largeDesc" },
+const BRANDS = ["Versace", "Zara", "Gucci", "Prada", "Calvin Klein", "Mayoral", "H&M", "Okaidi", "Chicco", "Kiabi"];
+
+const DESC_LANGS = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
+  { code: "ar", label: "العربية" },
+  { code: "it", label: "Italiano" },
 ];
 
 function uid() {
@@ -105,6 +114,8 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [enabledDescLangs, setEnabledDescLangs] = useState<string[]>([]);
+  const [descTranslations, setDescTranslations] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [categoryPathNames, setCategoryPathNames] = useState<string[]>([]);
   const [brand, setBrand] = useState("");
@@ -132,6 +143,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         if (data) {
           setTitle(data.title || "");
           setDescription(data.description || "");
+          if (data.description_translations && typeof data.description_translations === "object") {
+            setDescTranslations(data.description_translations);
+            setEnabledDescLangs(Object.keys(data.description_translations));
+          }
           setPrice(data.price != null ? String(data.price) : "");
           setBrand(data.brand || "");
           setSize(data.size || "");
@@ -349,6 +364,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       const fullPayload: any = {
         title: title.trim(),
         description: description.trim() || null,
+        description_translations: descTranslations,
         price: Number(price),
         src_url: primaryUrl,
         gallery: urls,
@@ -603,6 +619,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   }
 
   if (view === "brand") {
+    const filteredBrands = BRANDS.filter((b) => b.toLowerCase().includes(brandSearch.toLowerCase()));
     return (
       <ScreenShell title={t("addProduct.brand")} onBack={() => setView("main")}>
         <div className="p-4">
@@ -612,28 +629,35 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             placeholder={t("addProduct.searchBrands")}
             className="w-full px-4 py-3 rounded-xl border border-black/10 bg-[#F5F5F5] text-sm mb-3"
           />
-          <input
-            value={brand}
-            onChange={(e) => {
-              setBrand(e.target.value);
-              markDirty();
-            }}
-            placeholder={t("addProduct.brandPlaceholder")}
-            className="w-full px-4 py-3 rounded-xl border border-black/10 text-sm"
-          />
-          <p className="text-xs text-black/40 mt-2">{t("addProduct.brandHint")}</p>
+          <div className="space-y-1 max-h-80 overflow-y-auto">
+            {filteredBrands.map((b) => (
+              <button
+                key={b}
+                onClick={() => {
+                  setBrand(b);
+                  setView("main");
+                  markDirty();
+                }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left ${brand === b ? "bg-black text-white" : "hover:bg-[#F5F5F5]"}`}
+              >
+                <span>{b}</span>
+                {brand === b && <Check size={16} />}
+              </button>
+            ))}
+            {filteredBrands.length === 0 && brandSearch.trim() && (
+              <button
+                onClick={() => {
+                  setBrand(brandSearch.trim());
+                  setView("main");
+                  markDirty();
+                }}
+                className="w-full px-4 py-3 rounded-xl text-left bg-[#F5F5F5]"
+              >
+                {t("addProduct.useBrand")} "{brandSearch.trim()}"
+              </button>
+            )}
+          </div>
         </div>
-        <BottomBar>
-          <button
-            onClick={() => {
-              if (brandSearch.trim() && !brand.trim()) setBrand(brandSearch.trim());
-              setView("main");
-            }}
-            className="w-full bg-black text-white py-3 rounded-xl font-medium"
-          >
-            {t("addProduct.confirm")}
-          </button>
-        </BottomBar>
       </ScreenShell>
     );
   }
@@ -829,6 +853,70 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
                 rows={5}
                 className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10 resize-none"
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                {DESC_LANGS.map((l) => {
+                  const active = enabledDescLangs.includes(l.code);
+                  return (
+                    <button
+                      key={l.code}
+                      type="button"
+                      onClick={async () => {
+                        if (active) {
+                          setEnabledDescLangs((prev) => prev.filter((c) => c !== l.code));
+                          setDescTranslations((prev) => {
+                            const next = { ...prev };
+                            delete next[l.code];
+                            return next;
+                          });
+                          markDirty();
+                        } else {
+                          setEnabledDescLangs((prev) => [...prev, l.code]);
+                          if (!descTranslations[l.code] && description.trim()) {
+                            try {
+                              const res = await fetch("/api/translate", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ text: description, source: "auto", target: l.code }),
+                              });
+                              const data = await res.json();
+                              if (data?.translated) {
+                                setDescTranslations((prev) => ({ ...prev, [l.code]: data.translated }));
+                              }
+                            } catch {}
+                          }
+                          markDirty();
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+                        active ? "bg-black text-white border-black" : "bg-white text-black/60 border-black/10"
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {enabledDescLangs.length > 0 && (
+                <div className="mt-3 space-y-3">
+                  {enabledDescLangs.map((code) => {
+                    const lang = DESC_LANGS.find((l) => l.code === code);
+                    return (
+                      <div key={code}>
+                        <label className="text-sm text-black/70">{lang?.label}</label>
+                        <textarea
+                          value={descTranslations[code] || ""}
+                          onChange={(e) => {
+                            setDescTranslations((prev) => ({ ...prev, [code]: e.target.value }));
+                            markDirty();
+                          }}
+                          rows={4}
+                          className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10 resize-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </section>
