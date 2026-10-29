@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 type Prod = {
   id: any;
@@ -21,6 +22,7 @@ export default function AdminProductsPage() {
   const [editing, setEditing] = useState<Prod | null>(null);
   const [form, setForm] = useState<Prod>({ id: null, title: "", price: 0, src_url: "", rating: 0 });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function load() {
@@ -212,11 +214,38 @@ export default function AdminProductsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm text-black/70">Image URL</label>
+                <label className="text-sm text-black/70">Product Image</label>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      setMsg("");
+                      try {
+                        const url = await uploadToCloudinary(file);
+                        setForm({ ...form, src_url: url, gallery: [url] });
+                        setMsg("تم رفع الصورة بنجاح");
+                      } catch (err: any) {
+                        setMsg(err?.message || "فشل رفع الصورة");
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                    className="w-full text-sm"
+                  />
+                </div>
+                {uploading && <p className="text-xs text-black/50 mt-1">جاري الرفع...</p>}
+                {form.src_url && (
+                  <img src={form.src_url} alt="preview" className="mt-2 w-20 h-20 object-cover rounded border" />
+                )}
                 <input
                   value={form.src_url || ""}
                   onChange={(e) => setForm({ ...form, src_url: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10"
+                  placeholder="أو أدخل رابط الصورة يدوياً"
+                  className="w-full mt-2 px-3 py-2 rounded-lg border border-black/10 text-sm"
                 />
               </div>
               {msg && <p className="text-sm text-black/70">{msg}</p>}
