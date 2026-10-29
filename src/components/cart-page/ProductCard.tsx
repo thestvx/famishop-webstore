@@ -14,6 +14,7 @@ import {
 } from "@/lib/features/carts/cartsSlice";
 import { Product } from "@/types/product.types";
 import { useI18n } from "@/lib/i18n";
+import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { Button } from "@/components/ui/button";
 import CartCounter from "@/components/ui/CartCounter";
 
@@ -81,27 +82,25 @@ const ProductCard = ({ data }: ProductCardProps) => {
           <div className="flex items-center space-x-[5px] xl:space-x-2.5">
             {data.discount.percentage > 0 ? (
               <span className="font-bold text-black text-xl xl:text-2xl">
-                {`$${Math.round(
-                  data.price - (data.price * data.discount.percentage) / 100
-                )}`}
+                {formatPrice(Math.round(data.price - (data.price * data.discount.percentage) / 100))}
               </span>
             ) : data.discount.amount > 0 ? (
               <span className="font-bold text-black text-xl xl:text-2xl">
-                {`$${data.price - data.discount.amount}`}
+                {formatPrice(Math.max(data.price - data.discount.amount, 0))}
               </span>
             ) : (
               <span className="font-bold text-black text-xl xl:text-2xl">
-                ${data.price}
+                {formatPrice(data.price)}
               </span>
             )}
             {data.discount.percentage > 0 && (
               <span className="font-bold text-black/40 line-through text-xl xl:text-2xl">
-                ${data.price}
+                {formatPrice(data.price)}
               </span>
             )}
             {data.discount.amount > 0 && (
               <span className="font-bold text-black/40 line-through text-xl xl:text-2xl">
-                ${data.price}
+                {formatPrice(data.price)}
               </span>
             )}
             {data.discount.percentage > 0 ? (

@@ -98,6 +98,7 @@ function normalizeProduct(row: AnyRecord): Product | null {
     colors: toStringArray(row.colors),
     materials: toStringArray(row.materials),
     packageSize: typeof row.package_size === "string" && row.package_size.trim() ? row.package_size : null,
+    stock: row.stock != null ? Number(row.stock) : null,
     status: typeof row.status === "string" ? row.status : null,
     prices,
   };

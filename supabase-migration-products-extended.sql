@@ -14,3 +14,4 @@ alter table products add column if not exists prices jsonb default '{}'::jsonb;
 alter table products add column if not exists package_size text;
 alter table products add column if not exists status text default 'published';
 alter table products add column if not exists public_ids text[] default '{}';
+alter table products add column if not exists stock integer;

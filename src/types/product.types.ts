@@ -28,6 +28,7 @@ export type Product = {
   colors?: string[];
   materials?: string[];
   packageSize?: string | null;
+  stock?: number | null;
   status?: string | null;
   prices?: PriceMap | null;
 };

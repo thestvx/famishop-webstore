@@ -229,6 +229,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [priceDzd, setPriceDzd] = useState("");
   const price = priceEur || priceUsd || priceDzd;
   const [packageSize, setPackageSize] = useState("");
+  const [stock, setStock] = useState("");
 
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -301,6 +302,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           setColors(Array.isArray(data.colors) ? data.colors : []);
           setMaterials(Array.isArray(data.materials) ? data.materials : []);
           setPackageSize(data.package_size || "");
+          setStock(data.stock != null ? String(data.stock) : "");
           setCategoryId(data.category || null);
           if (data.category_path) setCategoryPathNames(String(data.category_path).split(" > "));
           else if (data.category) {
@@ -576,6 +578,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         colors,
         materials,
         package_size: packageSize || null,
+        stock: stock ? Number(stock) : null,
         public_ids: ids,
       };
 
@@ -1165,6 +1168,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           <Row label={t("addProduct.material")} value={materials.map((m) => t(`material.${m}`)).join(", ")} onClick={() => setView("material")} />
           <Row label={t("addProduct.price")} value={[priceUsd && `${priceUsd} USD`, priceEur && `${priceEur} EUR`, priceDzd && `${priceDzd} DZD`].filter(Boolean).join(" / ")} onClick={() => setView("price")} />
           <Row label={t("addProduct.packageSize")} value={packageSize ? t(`pkg.${packageSize}`) : ""} onClick={() => setView("package")} />
+          <Row label={t("addProduct.stock")} value={stock} onClick={() => {
+            const next = window.prompt(t("addProduct.stock"), stock);
+            if (next !== null) { setStock(next.trim()); markDirty(); }
+          }} />
         </section>
 
         {msg && <p className="text-sm text-black/70 mb-4">{msg}</p>}
