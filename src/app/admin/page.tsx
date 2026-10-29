@@ -1,23 +1,91 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { newArrivalsData, topSellingData, relatedProductData } from "@/lib/data/products";
 import { Package, ShoppingCart, Users, DollarSign } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
-const allProducts = [
+const fallbackProducts = [
   ...newArrivalsData,
   ...topSellingData,
   ...relatedProductData,
 ];
 
-const stats = [
-  { label: "Total Products", value: allProducts.length, icon: Package, color: "bg-blue-50 text-blue-600" },
-  { label: "Total Orders", value: 128, icon: ShoppingCart, color: "bg-green-50 text-green-600" },
-  { label: "Customers", value: 64, icon: Users, color: "bg-purple-50 text-purple-600" },
-  { label: "Revenue", value: 12480, icon: DollarSign, color: "bg-orange-50 text-orange-600", prefix: "$" },
-];
-
 export default function AdminOverviewPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setLoading(true);
+      if (!isSupabaseConfigured() || !supabase) {
+        setProducts(fallbackProducts);
+        setOrders([]);
+        setCustomers([]);
+        setLoading(false);
+        return;
+      }
+      try {
+        const [prodRes, orderRes, custRes] = await Promise.all([
+          supabase.from("products").select("*").order("created_at", { ascending: false }),
+          supabase.from("orders").select("*"),
+          supabase.from("customers").select("*"),
+        ]);
+        if (!active) return;
+        if (prodRes.data) setProducts(prodRes.data);
+        if (orderRes.data) setOrders(orderRes.data);
+        if (custRes.data) setCustomers(custRes.data);
+      } catch (e) {
+        // keep empty/partial
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const totalProducts = products.length;
+  const totalOrders = orders.length;
+
+  // count unique customers by email/id if possible
+  const uniqueCustomers = new Set();
+  if (customers.length > 0) {
+    customers.forEach((c: any) => {
+      if (c.email) uniqueCustomers.add(c.email.toLowerCase());
+      else if (c.id) uniqueCustomers.add(String(c.id));
+    });
+  } else {
+    // fallback: unique from orders.customer
+    orders.forEach((o: any) => {
+      if (o.customer) uniqueCustomers.add(String(o.customer).toLowerCase());
+    });
+  }
+  const totalCustomers = uniqueCustomers.size;
+
+  // revenue: sum orders where status indicates paid/completed if exists; else sum all non-cancelled? be conservative
+  let revenue = 0;
+  orders.forEach((o: any) => {
+    const status = (o.status || "").toLowerCase();
+    if (status === "cancelled" || status === "canceled" || status === "refunded") return;
+    const t = Number(o.total || o.amount || 0);
+    if (!isNaN(t)) revenue += t;
+  });
+
+  const stats = [
+    { label: "Total Products", value: totalProducts, icon: Package, color: "bg-blue-50 text-blue-600" },
+    { label: "Total Orders", value: totalOrders, icon: ShoppingCart, color: "bg-green-50 text-green-600" },
+    { label: "Customers", value: totalCustomers, icon: Users, color: "bg-purple-50 text-purple-600" },
+    { label: "Revenue", value: revenue, icon: DollarSign, color: "bg-orange-50 text-orange-600", prefix: "" },
+  ];
+
+  const recent = products.slice(0, 8);
+
   return (
     <div className="space-y-6">
       <div>
@@ -55,18 +123,30 @@ export default function AdminOverviewPage() {
                 <th className="py-2 pr-4">ID</th>
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Price</th>
-                <th className="py-2 pr-4">Rating</th>
               </tr>
             </thead>
             <tbody>
-              {allProducts.slice(0, 8).map((p) => (
-                <tr key={p.id} className="border-b border-black/5">
-                  <td className="py-2 pr-4">{p.id}</td>
-                  <td className="py-2 pr-4">{p.title}</td>
-                  <td className="py-2 pr-4">${p.price}</td>
-                  <td className="py-2 pr-4">{p.rating}</td>
+              {loading && recent.length === 0 ? (
+                <tr>
+                  <td className="py-2 pr-4 text-black/50" colSpan={3}>
+                    Loading...
+                  </td>
                 </tr>
-              ))}
+              ) : recent.length === 0 ? (
+                <tr>
+                  <td className="py-2 pr-4 text-black/50" colSpan={3}>
+                    No products found.
+                  </td>
+                </tr>
+              ) : (
+                recent.map((p: any) => (
+                  <tr key={p.id} className="border-b border-black/5">
+                    <td className="py-2 pr-4">{p.id}</td>
+                    <td className="py-2 pr-4">{p.title}</td>
+                    <td className="py-2 pr-4">{p.price}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

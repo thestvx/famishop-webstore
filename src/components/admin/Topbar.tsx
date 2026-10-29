@@ -1,14 +1,29 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Bell, Search, Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase";
 
 export const AdminTopbar = ({
   onMenuClick,
 }: {
   onMenuClick: () => void;
 }) => {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(firebaseAuth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const displayName = user?.displayName || (loading ? "..." : user?.email ? "Admin" : "Admin");
+  const email = user?.email || (loading ? "" : "");
+
   return (
     <header className="h-16 bg-white border-b border-black/10 flex items-center justify-between px-4 lg:px-6 gap-4">
       <div className="flex items-center gap-3 flex-1">
@@ -43,11 +58,11 @@ export const AdminTopbar = ({
         </button>
         <div className="flex items-center gap-2 pl-2 border-l border-black/10">
           <div className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold">
-            A
+            {user?.email ? user.email[0].toUpperCase() : "A"}
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium leading-tight">Admin</p>
-            <p className="text-xs text-black/50 leading-tight">admin@famishop.com</p>
+            <p className="text-sm font-medium leading-tight">{displayName}</p>
+            <p className="text-xs text-black/50 leading-tight">{email}</p>
           </div>
         </div>
       </div>
