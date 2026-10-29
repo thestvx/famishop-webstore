@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Plus, X, GripVertical, Check } from "lucide-
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { uploadToCloudinaryWithProgress } from "@/lib/cloudinary";
 import { useI18n } from "@/lib/i18n";
+import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORY_TREE, findCategoryPath, searchCategories, isLeaf, getSizeType, CategoryNode } from "@/lib/categories";
 
 type View =
@@ -83,11 +84,18 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export default function ProductEditor() {
+type ProductEditorProps = {
+  open?: boolean;
+  embedded?: boolean;
+  editId?: string | null;
+  onClose?: () => void;
+};
+
+export default function ProductEditor({ open = true, embedded = false, editId: editIdProp, onClose }: ProductEditorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t, currency } = useI18n();
-  const editId = searchParams.get("id");
+  const editId = editIdProp !== undefined ? editIdProp : searchParams.get("id");
 
   const [view, setView] = useState<View>("main");
   const [categoryLevel, setCategoryLevel] = useState<CategoryNode[]>(CATEGORY_TREE);
@@ -306,7 +314,8 @@ export default function ProductEditor() {
 
   const closeEditor = () => {
     if (dirty && !confirm(t("addProduct.unsavedChanges"))) return;
-    router.push("/admin/products");
+    if (embedded && onClose) onClose();
+    else router.push("/admin/products");
   };
 
   const validate = () => {

@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import ProductEditor from "@/components/admin/products/create/ProductEditor";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Prod = {
   id: any;
@@ -23,7 +25,8 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<Prod>({ id: null, title: "", price: 0, src_url: "", rating: 0 });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editId, setEditId] = useState<any>(null);
 
   async function load() {
     setLoading(true);
@@ -44,64 +47,6 @@ export default function AdminProductsPage() {
   useEffect(() => {
     load();
   }, []);
-
-  function openAdd() {
-    setEditing(null);
-    setForm({ id: null, title: "", price: 0, src_url: "", rating: 0 });
-    setMsg("");
-    setModalOpen(true);
-  }
-
-  function openEdit(p: Prod) {
-    window.location.href = `/admin/products/new/?id=${p.id}`;
-  }
-
-  async function save() {
-    if (!isSupabaseConfigured() || !supabase) {
-      setMsg("Supabase غير مُهيأ");
-      return;
-    }
-    if (!form.title || form.price === undefined || form.price === null) {
-      setMsg("يرجى إدخال اسم وسعر المنتج");
-      return;
-    }
-    setSaving(true);
-    setMsg("");
-    try {
-      if (editing && editing.id) {
-        const { error } = await supabase
-          .from("products")
-          .update({
-            title: form.title,
-            price: Number(form.price),
-            src_url: form.src_url || null,
-            rating: form.rating ?? 0,
-            gallery: form.gallery || (form.src_url ? [form.src_url] : []),
-          })
-          .eq("id", editing.id);
-        if (error) throw error;
-        setMsg("تم التحديث بنجاح");
-      } else {
-        const { error } = await supabase.from("products").insert([
-          {
-            title: form.title,
-            price: Number(form.price),
-            src_url: form.src_url || null,
-            rating: form.rating ?? 0,
-            gallery: form.src_url ? [form.src_url] : [],
-          },
-        ]);
-        if (error) throw error;
-        setMsg("تم الإضافة بنجاح");
-      }
-      await load();
-      setTimeout(() => setModalOpen(false), 800);
-    } catch (e: any) {
-      setMsg(e?.message || "حدث خطأ");
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function remove(p: Prod) {
     if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
@@ -125,7 +70,10 @@ export default function AdminProductsPage() {
         </div>
         <button
           type="button"
-          onClick={() => (window.location.href = "/admin/products/new/")}
+          onClick={() => {
+            setEditId(null);
+            setEditorOpen(true);
+          }}
           className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/80"
         >
           <Plus size={16} /> Add Product
@@ -167,7 +115,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(p)} className="p-1.5 rounded hover:bg-gray-100" aria-label="edit">
+                        <button onClick={() => { setEditId(p.id); setEditorOpen(true); }} className="p-1.5 rounded hover:bg-gray-100" aria-label="edit">
                           <Pencil size={16} />
                         </button>
                         <button onClick={() => remove(p)} className="p-1.5 rounded hover:bg-gray-100 text-red-500" aria-label="delete">
@@ -183,81 +131,35 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b border-black/10">
-              <h3 className="font-bold">{editing ? "Edit Product" : "Add Product"}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-1.5 rounded hover:bg-gray-100">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="text-sm text-black/70">Title</label>
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-black/70">Price</label>
-                <input
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-black/10"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-black/70">Product Image</label>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploading(true);
-                      setMsg("");
-                      try {
-                        const url = await uploadToCloudinary(file);
-                        setForm({ ...form, src_url: url, gallery: [url] });
-                        setMsg("تم رفع الصورة بنجاح");
-                      } catch (err: any) {
-                        setMsg(err?.message || "فشل رفع الصورة");
-                      } finally {
-                        setUploading(false);
-                      }
-                    }}
-                    className="w-full text-sm"
-                  />
-                </div>
-                {uploading && <p className="text-xs text-black/50 mt-1">جاري الرفع...</p>}
-                {form.src_url && (
-                  <img src={form.src_url} alt="preview" className="mt-2 w-20 h-20 object-cover rounded border" />
-                )}
-                <input
-                  value={form.src_url || ""}
-                  onChange={(e) => setForm({ ...form, src_url: e.target.value })}
-                  placeholder="أو أدخل رابط الصورة يدوياً"
-                  className="w-full mt-2 px-3 py-2 rounded-lg border border-black/10 text-sm"
-                />
-              </div>
-              {msg && <p className="text-sm text-black/70">{msg}</p>}
-            </div>
-            <div className="flex items-center justify-end gap-2 p-4 border-t border-black/10">
-              <button onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-lg text-sm hover:bg-gray-100">
-                Cancel
-              </button>
-              <button onClick={save} disabled={saving} className="px-4 py-2 rounded-lg text-sm bg-black text-white hover:bg-black/80 disabled:opacity-50">
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <AnimatePresence>
+        {editorOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl w-full max-w-3xl h-[90vh] overflow-hidden shadow-2xl"
+            >
+              <ProductEditor
+                embedded
+                editId={editId}
+                onClose={() => {
+                  setEditorOpen(false);
+                  setEditId(null);
+                  load();
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
