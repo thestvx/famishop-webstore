@@ -9,6 +9,6 @@ alter table products add column if not exists condition text;
 alter table products add column if not exists colors text[] default '{}';
 alter table products add column if not exists materials text[] default '{}';
 alter table products add column if not exists price numeric;
-alter table products add column if not exists prices jsonb default '{}'::jsonb;
+alter table products add column if not exists status text default 'published';
 alter table products add column if not exists public_ids text[] default '{}';
 EOF

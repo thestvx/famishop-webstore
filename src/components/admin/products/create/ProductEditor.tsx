@@ -352,7 +352,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     return null;
   };
 
-  const handleSave = async () => {
+  const handleSave = async (publishStatus: string = "published") => {
     const err = validate();
     if (err) {
       setMsg(err);
@@ -372,6 +372,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
       const fullPayload: any = {
         title: title.trim(),
+        status: publishStatus,
         description: description.trim() || null,
         description_translations: descTranslations,
         price: Number(price || 0),
@@ -1002,13 +1003,22 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
         {msg && <p className="text-sm text-black/70 mb-4">{msg}</p>}
 
-        <button
-          onClick={handleSave}
-          disabled={saving || images.some((i) => i.status === "uploading")}
-          className="w-full bg-black text-white py-3 rounded-xl font-medium disabled:opacity-50"
-        >
-          {saving ? t("addProduct.saving") : t("addProduct.save")}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => handleSave("draft")}
+            disabled={saving || images.some((i) => i.status === "uploading")}
+            className="flex-1 bg-white border border-black/10 text-black py-3 rounded-xl font-medium disabled:opacity-50"
+          >
+            {saving ? t("addProduct.saving") : t("addProduct.saveDraft")}
+          </button>
+          <button
+            onClick={() => handleSave("published")}
+            disabled={saving || images.some((i) => i.status === "uploading")}
+            className="flex-1 bg-black text-white py-3 rounded-xl font-medium disabled:opacity-50"
+          >
+            {saving ? t("addProduct.saving") : t("addProduct.save")}
+          </button>
+        </div>
       </main>
     </div>
   );
