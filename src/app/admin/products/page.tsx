@@ -53,10 +53,7 @@ export default function AdminProductsPage() {
   }
 
   function openEdit(p: Prod) {
-    setEditing(p);
-    setForm({ ...p });
-    setMsg("");
-    setModalOpen(true);
+    window.location.href = `/admin/products/new/?id=${p.id}`;
   }
 
   async function save() {
