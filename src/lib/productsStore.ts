@@ -85,7 +85,10 @@ function normalizeProduct(row: AnyRecord): Product | null {
     discount: normalizeDiscount(row.discount),
     rating: normalizeRating(row.rating),
     titleTranslations,
-    description: typeof row.description === "string" ? row.description : null,
+    description:
+      typeof row.description === "string" && row.description.trim()
+        ? row.description
+        : Object.values(descriptionTranslations)[0] || null,
     descriptionTranslations,
     category: typeof row.category === "string" && row.category.trim() ? row.category : null,
     categoryPath: typeof row.category_path === "string" && row.category_path.trim() ? row.category_path : null,
@@ -94,6 +97,7 @@ function normalizeProduct(row: AnyRecord): Product | null {
     condition: typeof row.condition === "string" && row.condition.trim() ? row.condition : null,
     colors: toStringArray(row.colors),
     materials: toStringArray(row.materials),
+    packageSize: typeof row.package_size === "string" && row.package_size.trim() ? row.package_size : null,
     status: typeof row.status === "string" ? row.status : null,
     prices,
   };

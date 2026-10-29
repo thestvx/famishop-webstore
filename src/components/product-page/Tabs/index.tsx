@@ -6,34 +6,23 @@ import React, { useState } from "react";
 import ProductDetailsContent from "./ProductDetailsContent";
 import ReviewsContent from "./ReviewsContent";
 import FaqContent from "./FaqContent";
+import { useI18n } from "@/lib/i18n";
+import { Product } from "@/types/product.types";
 
-type TabBtn = {
-  id: number;
-  label: string;
-};
-
-const tabBtnData: TabBtn[] = [
-  {
-    id: 1,
-    label: "Product Details",
-  },
-  {
-    id: 2,
-    label: "Rating & Reviews",
-  },
-  {
-    id: 3,
-    label: "FAQs",
-  },
-];
-
-const Tabs = () => {
+const Tabs = ({ data }: { data: Product | null }) => {
+  const { t } = useI18n();
   const [active, setActive] = useState<number>(1);
+
+  const tabs = [
+    { id: 1, label: t("product.tabDetails") },
+    { id: 2, label: t("product.tabReviews") },
+    { id: 3, label: t("product.tabFaq") },
+  ];
 
   return (
     <div>
       <div className="flex items-center mb-6 sm:mb-8 overflow-x-auto">
-        {tabBtnData.map((tab) => (
+        {tabs.map((tab) => (
           <Button
             key={tab.id}
             variant="ghost"
@@ -51,7 +40,7 @@ const Tabs = () => {
         ))}
       </div>
       <div className="mb-12 sm:mb-16">
-        {active === 1 && <ProductDetailsContent />}
+        {active === 1 && <ProductDetailsContent data={data} />}
         {active === 2 && <ReviewsContent />}
         {active === 3 && <FaqContent />}
       </div>

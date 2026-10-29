@@ -87,9 +87,9 @@ const Header = ({ data }: { data: Product }) => {
             {description || t("product.defaultDescription")}
           </p>
           <hr className="h-[1px] border-t-black/10 mb-5" />
-          <ColorSelection />
+          <ColorSelection colors={data.colors || []} />
           <hr className="h-[1px] border-t-black/10 my-5" />
-          <SizeSelection />
+          <SizeSelection sizes={data.size ? data.size.split(/[,/|]/).map((s) => s.trim()).filter(Boolean) : []} />
           <hr className="hidden md:block h-[1px] border-t-black/10 my-5" />
           <AddToCardSection data={data} />
         </div>

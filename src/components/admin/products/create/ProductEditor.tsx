@@ -541,6 +541,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           } catch {}
         }
       }
+      // Keep the original content available even when the translation service
+      // or the optional description column is unavailable.
+      if (title.trim() && !newTitle.en) newTitle.en = title.trim();
+      if (description.trim() && !newDesc.en) newDesc.en = description.trim();
       setDescTranslations(newDesc);
       setTitleTranslations(newTitle);
       const doneImages = images.filter((i) => i.status === "done");

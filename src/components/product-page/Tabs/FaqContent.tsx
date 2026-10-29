@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "@/lib/i18n";
 import {
   Accordion,
   AccordionContent,
@@ -45,10 +46,11 @@ const faqsData: FaqItem[] = [
 ];
 
 const FaqContent = () => {
+  const { t } = useI18n();
   return (
     <section>
       <h3 className="text-xl sm:text-2xl font-bold text-black mb-5 sm:mb-6">
-        Frequently asked questions
+        {t("product.faqTitle")}
       </h3>
       <Accordion type="single" collapsible>
         {faqsData.map((faq, idx) => (

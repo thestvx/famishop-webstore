@@ -17,9 +17,6 @@ const RegionModal = () => {
     if (typeof window === "undefined") return;
     const saved = window.localStorage.getItem("famishop-region");
     if (saved === "algeria" || saved === "europe") {
-      if (typeof setRegion === "function") {
-        setRegion(saved);
-      }
       setOpen(false);
       return;
     }

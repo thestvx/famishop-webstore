@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type Locale = "en" | "fr" | "ar" | "it";
 export type Currency = "EUR" | "DZD";
@@ -77,7 +77,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "newsletter.title": "STAY UP TO DATE ABOUT OUR LATEST OFFERS",
     "newsletter.placeholder": "Enter your email address",
     "newsletter.subscribe": "Subscribe to Newsletter",
-    "common.back": "Back",
+     "common.back": "Back",
+     "common.home": "Home",
     "common.cancel": "Cancel",
     "common.confirm": "Confirm",
     "common.loading": "Loading...",
@@ -87,7 +88,25 @@ const translations: Record<Locale, Record<string, string>> = {
     "product.notFound": "Product not found",
     "product.notFoundDesc": "This product may have been removed or the link is invalid.",
     "product.backToShop": "Back to shop",
-    "product.untitled": "Untitled product",
+     "product.untitled": "Untitled product",
+     "product.faqTitle": "Frequently asked questions",
+     "product.allReviews": "All Reviews",
+     "product.latest": "Latest",
+     "product.mostRelevant": "Most Relevant",
+     "product.oldest": "Oldest",
+     "product.writeReview": "Write a Review",
+     "product.loadMoreReviews": "Load More Reviews",
+     "product.specifications": "Product specifications",
+     "product.categoryPath": "Category path",
+     "product.tabDetails": "Product Details",
+     "product.tabReviews": "Rating & Reviews",
+     "product.tabFaq": "FAQs",
+     "product.addToCart": "Add to Cart",
+     "product.selectColors": "Select Colors",
+     "product.chooseSize": "Choose Size",
+     "product.oneSize": "One Size",
+     "product.months": "months",
+     "product.years": "years",
     "product.defaultDescription": "This item is crafted with care to offer comfort, quality and style for everyday wear.",
     "shop.filters": "Filters",
     "shop.categories": "Categories",
@@ -288,7 +307,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "newsletter.title": "RESTEZ INFORMÉ DE NOS DERNIÈRES OFFRES",
     "newsletter.placeholder": "Entrez votre adresse e-mail",
     "newsletter.subscribe": "S'abonner à la newsletter",
-    "common.back": "Retour",
+     "common.back": "Retour",
+     "common.home": "Accueil",
     "common.cancel": "Annuler",
     "common.confirm": "Confirmer",
     "common.loading": "Chargement...",
@@ -298,7 +318,25 @@ const translations: Record<Locale, Record<string, string>> = {
     "product.notFound": "Produit introuvable",
     "product.notFoundDesc": "Ce produit a peut-être été supprimé ou le lien est invalide.",
     "product.backToShop": "Retour à la boutique",
-    "product.untitled": "Produit sans titre",
+     "product.untitled": "Produit sans titre",
+     "product.faqTitle": "Questions fréquentes",
+     "product.allReviews": "Tous les avis",
+     "product.latest": "Les plus récents",
+     "product.mostRelevant": "Les plus pertinents",
+     "product.oldest": "Les plus anciens",
+     "product.writeReview": "Écrire un avis",
+     "product.loadMoreReviews": "Charger plus d'avis",
+     "product.specifications": "Spécifications du produit",
+     "product.categoryPath": "Chemin de catégorie",
+     "product.tabDetails": "Détails du produit",
+     "product.tabReviews": "Avis et notes",
+     "product.tabFaq": "FAQ",
+     "product.addToCart": "Ajouter au panier",
+     "product.selectColors": "Choisir les couleurs",
+     "product.chooseSize": "Choisir la taille",
+     "product.oneSize": "Taille unique",
+     "product.months": "mois",
+     "product.years": "ans",
     "product.defaultDescription": "Cet article est conçu avec soin pour offrir confort, qualité et style au quotidien.",
     "shop.filters": "Filtres",
     "shop.categories": "Catégories",
@@ -497,7 +535,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "newsletter.title": "ابقَ على اطلاع بأحدث العروض",
     "newsletter.placeholder": "أدخل بريدك الإلكتروني",
     "newsletter.subscribe": "اشترك في النشرة البريدية",
-    "common.back": "رجوع",
+     "common.back": "رجوع",
+     "common.home": "الرئيسية",
     "common.cancel": "إلغاء",
     "common.confirm": "تأكيد",
     "common.loading": "جارٍ التحميل...",
@@ -507,7 +546,25 @@ const translations: Record<Locale, Record<string, string>> = {
     "product.notFound": "المنتج غير موجود",
     "product.notFoundDesc": "ربما تم حذف هذا المنتج أو أن الرابط غير صالح.",
     "product.backToShop": "العودة إلى المتجر",
-    "product.untitled": "منتج بدون عنوان",
+     "product.untitled": "منتج بدون عنوان",
+     "product.faqTitle": "الأسئلة الشائعة",
+     "product.allReviews": "جميع المراجعات",
+     "product.latest": "الأحدث",
+     "product.mostRelevant": "الأكثر صلة",
+     "product.oldest": "الأقدم",
+     "product.writeReview": "اكتب مراجعة",
+     "product.loadMoreReviews": "تحميل المزيد من المراجعات",
+     "product.specifications": "مواصفات المنتج",
+     "product.categoryPath": "مسار الفئة",
+     "product.tabDetails": "تفاصيل المنتج",
+     "product.tabReviews": "التقييمات والمراجعات",
+     "product.tabFaq": "الأسئلة الشائعة",
+     "product.addToCart": "أضف إلى السلة",
+     "product.selectColors": "اختر الألوان",
+     "product.chooseSize": "اختر المقاس",
+     "product.oneSize": "مقاس واحد",
+     "product.months": "أشهر",
+     "product.years": "سنوات",
     "product.defaultDescription": "هذا المنتج مصنوع بعناية ليمنحك الراحة والجودة والأناقة في الاستخدام اليومي.",
     "shop.filters": "الفلاتر",
     "shop.categories": "الفئات",
@@ -706,7 +763,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "newsletter.title": "RIMANI AGGIORNATO SULLE NOSTRE ULTIME OFFERTE",
     "newsletter.placeholder": "Inserisci il tuo indirizzo email",
     "newsletter.subscribe": "Iscriviti alla newsletter",
-    "common.back": "Indietro",
+     "common.back": "Indietro",
+     "common.home": "Home",
     "common.cancel": "Annulla",
     "common.confirm": "Conferma",
     "common.loading": "Caricamento...",
@@ -716,7 +774,25 @@ const translations: Record<Locale, Record<string, string>> = {
     "product.notFound": "Prodotto non trovato",
     "product.notFoundDesc": "Questo prodotto potrebbe essere stato rimosso o il link non è valido.",
     "product.backToShop": "Torna al negozio",
-    "product.untitled": "Prodotto senza titolo",
+     "product.untitled": "Prodotto senza titolo",
+     "product.faqTitle": "Domande frequenti",
+     "product.allReviews": "Tutte le recensioni",
+     "product.latest": "Più recenti",
+     "product.mostRelevant": "Più pertinenti",
+     "product.oldest": "Più vecchie",
+     "product.writeReview": "Scrivi una recensione",
+     "product.loadMoreReviews": "Carica altre recensioni",
+     "product.specifications": "Specifiche del prodotto",
+     "product.categoryPath": "Percorso categoria",
+     "product.tabDetails": "Dettagli del prodotto",
+     "product.tabReviews": "Valutazioni e recensioni",
+     "product.tabFaq": "FAQ",
+     "product.addToCart": "Aggiungi al carrello",
+     "product.selectColors": "Seleziona i colori",
+     "product.chooseSize": "Scegli la taglia",
+     "product.oneSize": "Taglia unica",
+     "product.months": "mesi",
+     "product.years": "anni",
     "product.defaultDescription": "Questo articolo è realizzato con cura per offrire comfort, qualità e stile ogni giorno.",
     "shop.filters": "Filtri",
     "shop.categories": "Categorie",
@@ -890,6 +966,10 @@ const getInitialRegion = (): Region | null => {
 };
 
 const getInitialCurrency = (region: Region | null): Currency => {
+  if (typeof window !== "undefined") {
+    const stored = window.localStorage.getItem("famishop-currency");
+    if (stored === "EUR" || stored === "DZD") return stored;
+  }
   if (region === "algeria") return "DZD";
   return "EUR";
 };
@@ -907,36 +987,41 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
     setCurrencyState(getInitialCurrency(initialRegion));
   }, []);
 
-  const setLocale = (next: Locale) => {
+  const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     if (typeof window !== "undefined") {
       window.localStorage.setItem("famishop-locale", next);
-      document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
-      document.documentElement.lang = next;
     }
-  };
+  }, []);
 
-  const setRegion = (next: Region) => {
+  const setRegion = useCallback((next: Region) => {
     setRegionState(next);
     const nextCurrency = next === "algeria" ? "DZD" : "EUR";
     setCurrencyState(nextCurrency);
     if (typeof window !== "undefined") {
       window.localStorage.setItem("famishop-region", next);
+      window.localStorage.setItem("famishop-currency", nextCurrency);
     }
-  };
+  }, []);
 
-  const setCurrency = (next: Currency) => {
+  const setCurrency = useCallback((next: Currency) => {
     setCurrencyState(next);
     if (typeof window !== "undefined") {
       window.localStorage.setItem("famishop-currency", next);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   useEffect(() => {
     fetch("/api/exchange-rate")
       .then((r) => r.json())
       .then((d) => {
-        if (d?.rate) setExchangeRate(d.rate);
+        const rate = Number(d?.DZD ?? d?.rate);
+        if (Number.isFinite(rate) && rate > 0) setExchangeRate(rate);
       })
       .catch(() => {});
   }, []);
@@ -980,7 +1065,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = useMemo(
     () => ({ locale, setLocale, currency, setCurrency, region: region || "europe", setRegion, t, formatPrice }),
-    [locale, currency, region, t, formatPrice]
+    [locale, setLocale, currency, setCurrency, region, setRegion, t, formatPrice]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

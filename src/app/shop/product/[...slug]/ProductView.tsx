@@ -112,7 +112,7 @@ export default function ProductView({ slug }: { slug?: string[] }) {
         <section className="mb-11">
           <Header data={productData} />
         </section>
-        <Tabs />
+        <Tabs data={productData} />
       </div>
       {related.length > 0 && (
         <div className="mb-[50px] sm:mb-20">

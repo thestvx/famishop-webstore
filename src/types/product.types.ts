@@ -27,6 +27,7 @@ export type Product = {
   condition?: string | null;
   colors?: string[];
   materials?: string[];
+  packageSize?: string | null;
   status?: string | null;
   prices?: PriceMap | null;
 };

@@ -10,14 +10,16 @@ import {
 import ReviewCard from "@/components/common/ReviewCard";
 import { reviewsData } from "@/lib/data/products";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 const ReviewsContent = () => {
+  const { t } = useI18n();
   return (
     <section>
       <div className="flex items-center justify-between flex-col sm:flex-row mb-5 sm:mb-6">
         <div className="flex items-center mb-4 sm:mb-0">
           <h3 className="text-xl sm:text-2xl font-bold text-black mr-2">
-            All Reviews
+            {t("product.allReviews")}
           </h3>
           <span className="text-sm sm:text-base text-black/60">(451)</span>
         </div>
@@ -27,9 +29,9 @@ const ReviewsContent = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="latest">Latest</SelectItem>
-              <SelectItem value="most-relevant">Most Relevant</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="latest">{t("product.latest")}</SelectItem>
+              <SelectItem value="most-relevant">{t("product.mostRelevant")}</SelectItem>
+              <SelectItem value="oldest">{t("product.oldest")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -37,7 +39,7 @@ const ReviewsContent = () => {
             type="button"
             className="sm:min-w-[166px] px-4 py-3 sm:px-5 sm:py-4 rounded-full bg-black font-medium text-xs sm:text-base h-12"
           >
-            Write a Review
+            {t("product.writeReview")}
           </Button>
         </div>
       </div>
@@ -51,7 +53,7 @@ const ReviewsContent = () => {
           href="#"
           className="inline-block w-[230px] px-11 py-4 border rounded-full hover:bg-black hover:text-white text-black transition-all font-medium text-sm sm:text-base border-black/10"
         >
-          Load More Reviews
+          {t("product.loadMoreReviews")}
         </Link>
       </div>
     </section>

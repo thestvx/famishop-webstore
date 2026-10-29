@@ -5,29 +5,11 @@ export type SpecItem = {
   value: string;
 };
 
-const specsData: SpecItem[] = [
-  {
-    label: " Material composition",
-    value: "100% Cotton",
-  },
-  {
-    label: "Care instructions",
-    value: "Machine wash warm, tumble dry",
-  },
-  {
-    label: "Fit type",
-    value: "Classic Fit",
-  },
-  {
-    label: "Pattern",
-    value: "Solid",
-  },
-];
-
-const ProductDetails = () => {
+const ProductDetails = ({ items }: { items: SpecItem[] }) => {
+  if (!items.length) return null;
   return (
     <>
-      {specsData.map((item, i) => (
+      {items.map((item, i) => (
         <div className="grid grid-cols-3" key={i}>
           <div>
             <p className="text-sm py-3 w-full leading-7 lg:py-4 pr-2 text-neutral-500">
