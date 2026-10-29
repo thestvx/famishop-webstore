@@ -10,9 +10,12 @@ import ColorSelection from "./ColorSelection";
 import SizeSelection from "./SizeSelection";
 import AddToCardSection from "./AddToCardSection";
 import { useI18n } from "@/lib/i18n";
+import { getLocalizedProductDescription, getLocalizedProductTitle } from "@/lib/productsStore";
 
 const Header = ({ data }: { data: Product }) => {
-  const { formatPrice } = useI18n();
+  const { formatPrice, locale, t } = useI18n();
+  const title = getLocalizedProductTitle(data, locale) || t("product.untitled");
+  const description = getLocalizedProductDescription(data, locale);
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -26,7 +29,7 @@ const Header = ({ data }: { data: Product }) => {
               "text-2xl md:text-[40px] md:leading-[40px] mb-3 md:mb-3.5 capitalize",
             ])}
           >
-            {data.title}
+            {title}
           </h1>
           <div className="flex items-center mb-3 sm:mb-3.5">
             <Rating
@@ -81,8 +84,7 @@ const Header = ({ data }: { data: Product }) => {
             )}
           </div>
           <p className="text-sm sm:text-base text-black/60 mb-5">
-            This graphic t-shirt which is perfect for any occasion. Crafted from
-            a soft and breathable fabric, it offers superior comfort and style.
+            {description || t("product.defaultDescription")}
           </p>
           <hr className="h-[1px] border-t-black/10 mb-5" />
           <ColorSelection />

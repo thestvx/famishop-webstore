@@ -118,7 +118,9 @@ export default function AdminProductsPage() {
                     <td className="py-3 px-4">{p.price}</td>
                     <td className="py-3 px-4">
                       {p.src_url ? (
-                        <img src={p.src_url} alt={p.title} className="w-10 h-10 object-cover rounded" />
+                        <div className="w-12 h-12 rounded bg-[#F0EEED] overflow-hidden flex items-center justify-center">
+                          <img src={p.src_url} alt={p.title} className="w-full h-full object-contain p-0.5" />
+                        </div>
                       ) : (
                         "-"
                       )}

@@ -7,7 +7,8 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { uploadToCloudinaryWithProgress } from "@/lib/cloudinary";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { CATEGORY_TREE, findCategoryPath, searchCategories, isLeaf, getSizeType, CategoryNode } from "@/lib/categories";
+import { CATEGORY_TREE, findCategoryPath, searchCategories, isLeaf, getSizeType, getLocalizedCategoryName, CategoryNode } from "@/lib/categories";
+import { fetchCategoryTree } from "@/lib/categoriesStore";
 
 type View =
   | "main"
@@ -92,12 +93,15 @@ const DESC_LANGS = [
 
 async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
+  // Keep SVG and GIF untouched to preserve vectors/animations.
+  if (file.type === "image/svg+xml" || file.type === "image/gif") return file;
+
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const maxDim = 1200;
+      const maxDim = 1600;
       let { width, height } = img;
       if (width > maxDim || height > maxDim) {
         const scale = maxDim / Math.max(width, height);
@@ -112,17 +116,31 @@ async function compressImage(file: File): Promise<File> {
         resolve(file);
         return;
       }
+      // Do not paint a background: PNG/WebP keep their alpha channel.
+      ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
+
+      const outputType =
+        file.type === "image/png"
+          ? "image/png"
+          : file.type === "image/webp"
+          ? "image/webp"
+          : "image/jpeg";
+      const quality = outputType === "image/png" ? undefined : 0.85;
+
       canvas.toBlob(
         (blob) => {
-          if (!blob) {
+          // Never replace the original with a larger file.
+          if (!blob || blob.size >= file.size) {
             resolve(file);
             return;
           }
-          resolve(new File([blob], file.name, { type: "image/jpeg" }));
+          const extension = outputType === "image/jpeg" ? "jpg" : outputType.split("/")[1];
+          const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+          resolve(new File([blob], `${baseName}.${extension}`, { type: outputType }));
         },
-        "image/jpeg",
-        0.8
+        outputType,
+        quality
       );
     };
     img.onerror = () => {
@@ -136,6 +154,42 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+function extractMissingColumn(message: string): string | null {
+  const patterns = [
+    /Could not find the '([^']+)' column/i,
+    /column "([^"]+)" of relation/i,
+    /column '([^']+)' does not exist/i,
+  ];
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return null;
+}
+
+/**
+ * Saves a product while tolerating older database schemas.
+ * If PostgREST reports an unknown column, that column is removed and the
+ * save is retried so optional fields never cause the whole payload to fail.
+ */
+async function persistProduct(payload: Record<string, any>, editId?: any) {
+  const current: Record<string, any> = { ...payload };
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const builder: any = editId
+      ? supabase.from("products").update(current).eq("id", editId)
+      : supabase.from("products").insert([current]);
+    const { error } = await builder;
+    if (!error) return;
+    const missing = extractMissingColumn(error.message || "");
+    if (missing && Object.prototype.hasOwnProperty.call(current, missing)) {
+      delete current[missing];
+      continue;
+    }
+    throw error;
+  }
+  throw new Error("Could not save product: database schema mismatch");
+}
+
 type ProductEditorProps = {
   open?: boolean;
   embedded?: boolean;
@@ -146,10 +200,11 @@ type ProductEditorProps = {
 export default function ProductEditor({ open = true, embedded = false, editId: editIdProp, onClose }: ProductEditorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t, currency } = useI18n();
+  const { t, currency, locale } = useI18n();
   const editId = editIdProp !== undefined ? editIdProp : searchParams.get("id");
 
   const [view, setView] = useState<View>("main");
+  const [categoryTree, setCategoryTree] = useState<CategoryNode[]>(CATEGORY_TREE);
   const [categoryLevel, setCategoryLevel] = useState<CategoryNode[]>(CATEGORY_TREE);
   const [categoryStack, setCategoryStack] = useState<CategoryNode[][]>([]);
   const [categorySearch, setCategorySearch] = useState("");
@@ -192,6 +247,28 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let active = true;
+    fetchCategoryTree()
+      .then((tree) => {
+        if (!active) return;
+        setCategoryTree(tree);
+        setCategoryLevel((current) => (current === CATEGORY_TREE ? tree : current));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!categoryId) return;
+    const path = findCategoryPath(categoryTree, categoryId);
+    if (path) {
+      setCategoryPathNames(path.map((node) => getLocalizedCategoryName(node, locale, t)));
+    }
+  }, [categoryTree, categoryId, locale, t]);
+
+  useEffect(() => {
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [view]);
 
@@ -227,8 +304,8 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           setCategoryId(data.category || null);
           if (data.category_path) setCategoryPathNames(String(data.category_path).split(" > "));
           else if (data.category) {
-            const p = findCategoryPath(CATEGORY_TREE, data.category);
-            if (p) setCategoryPathNames(p.map((n) => t(n.nameKey)));
+            const p = findCategoryPath(categoryTree, data.category);
+            if (p) setCategoryPathNames(p.map((n) => getLocalizedCategoryName(n, locale, t)));
           }
           const urls: string[] = Array.isArray(data.gallery) && data.gallery.length ? data.gallery : data.src_url ? [data.src_url] : [];
           const ids: string[] = Array.isArray(data.public_ids) ? data.public_ids : [];
@@ -267,10 +344,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   const filteredCategories = useMemo(() => {
     if (categorySearch.trim()) {
-      return searchCategories(CATEGORY_TREE, categorySearch);
+      return searchCategories(categoryTree, categorySearch);
     }
     return categoryLevel.map((n) => ({ node: n, path: [n] }));
-  }, [categorySearch, categoryLevel]);
+  }, [categorySearch, categoryLevel, categoryTree]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -353,13 +430,15 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   const selectCategory = (node: CategoryNode, _prev?: string[]) => {
     // build path from root
-    const pathNodes = findCategoryPath(CATEGORY_TREE, node.id);
-    const names = pathNodes ? pathNodes.map((n) => t(n.nameKey)) : [t(node.nameKey)];
+    const pathNodes = findCategoryPath(categoryTree, node.id);
+    const names = pathNodes
+      ? pathNodes.map((n) => getLocalizedCategoryName(n, locale, t))
+      : [getLocalizedCategoryName(node, locale, t)];
     setCategoryId(node.id);
     setCategoryPathNames(names);
     setView("main");
     setCategoryStack([]);
-    setCategoryLevel(CATEGORY_TREE);
+    setCategoryLevel(categoryTree);
     setCategorySearch("");
     markDirty();
   };
@@ -372,7 +451,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       setCategorySearch("");
     } else {
       setView("main");
-      setCategoryLevel(CATEGORY_TREE);
+      setCategoryLevel(categoryTree);
       setCategoryStack([]);
       setCategorySearch("");
     }
@@ -386,12 +465,12 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       setCategoryLevel(node.children);
       setCategorySearch("");
     } else {
-      const names = item.path.map((n) => t(n.nameKey));
+      const names = item.path.map((n) => getLocalizedCategoryName(n, locale, t));
       setCategoryId(node.id);
       setCategoryPathNames(names);
       setView("main");
       setCategoryStack([]);
-      setCategoryLevel(CATEGORY_TREE);
+      setCategoryLevel(categoryTree);
       setCategorySearch("");
       markDirty();
     }
@@ -503,33 +582,9 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           fullPayload.rating = existing.rating ?? 0;
           fullPayload.discount = existing.discount ?? { amount: 0, percentage: 0 };
         }
-        let { error } = await supabase.from("products").update(fullPayload).eq("id", editId);
-        if (error) {
-          // fallback base
-          const basePayload = {
-            title: title.trim(),
-            price: Number(price),
-            src_url: primaryUrl,
-            gallery: urls,
-          };
-          const r2 = await supabase.from("products").update(basePayload).eq("id", editId);
-          if (r2.error) throw r2.error;
-        }
-      } else {
-        let { error } = await supabase.from("products").insert([fullPayload]);
-        if (error) {
-          const basePayload = {
-            title: title.trim(),
-            price: Number(price),
-            src_url: primaryUrl,
-            gallery: urls,
-            rating: 0,
-            discount: { amount: 0, percentage: 0 },
-          };
-          const r2 = await supabase.from("products").insert([basePayload]);
-          if (r2.error) throw r2.error;
-        }
       }
+
+      await persistProduct(fullPayload, editId);
       setDirty(false);
       setMsg(t("addProduct.saved"));
       setTimeout(() => closeEditor(), 900);
@@ -584,7 +639,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               >
                 <div className="flex items-center gap-3">
                   {selected && <Check size={18} className="text-black" />}
-                  <span className={selected ? "font-semibold" : ""}>{t(node.nameKey)}</span>
+                  <span className={selected ? "font-semibold" : ""}>{getLocalizedCategoryName(node, locale, t)}</span>
                 </div>
                 {hasChildren && <ChevronRight size={18} className="text-black/40" />}
               </button>
@@ -942,7 +997,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
                     </div>
                   )}
                   {img.status === "done" && img.url && (
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <img src={img.url} alt="" className="w-full h-full object-contain p-1" />
                   )}
                   {img.status === "error" && (
                     <div className="absolute inset-0 flex items-center justify-center text-xs text-red-500 p-1 text-center">

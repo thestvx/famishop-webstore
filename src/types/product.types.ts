@@ -3,6 +3,12 @@ export type Discount = {
   percentage: number;
 };
 
+export type PriceMap = {
+  USD?: number | null;
+  EUR?: number | null;
+  DZD?: number | null;
+};
+
 export type Product = {
   id: number;
   title: string;
@@ -11,4 +17,16 @@ export type Product = {
   price: number;
   discount: Discount;
   rating: number;
+  titleTranslations?: Record<string, string>;
+  description?: string | null;
+  descriptionTranslations?: Record<string, string>;
+  category?: string | null;
+  categoryPath?: string | null;
+  brand?: string | null;
+  size?: string | null;
+  condition?: string | null;
+  colors?: string[];
+  materials?: string[];
+  status?: string | null;
+  prices?: PriceMap | null;
 };

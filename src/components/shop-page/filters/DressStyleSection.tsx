@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   Accordion,
@@ -5,50 +7,42 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import Link from "next/link";
 import { MdKeyboardArrowRight } from "react-icons/md";
+import { CategoryNode, getLocalizedCategoryName } from "@/lib/categories";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-type DressStyle = {
-  title: string;
-  slug: string;
+type Props = {
+  tree: CategoryNode[];
+  selectedCategory: string | null;
+  onSelectCategory: (id: string | null) => void;
 };
 
-const dressStylesData: DressStyle[] = [
-  {
-    title: "Casual",
-    slug: "/shop?style=casual",
-  },
-  {
-    title: "Formal",
-    slug: "/shop?style=formal",
-  },
-  {
-    title: "Party",
-    slug: "/shop?style=party",
-  },
-  {
-    title: "Gym",
-    slug: "/shop?style=gym",
-  },
-];
+const DressStyleSection = ({ tree, selectedCategory, onSelectCategory }: Props) => {
+  const { t, locale } = useI18n();
+  if (tree.length === 0) return null;
 
-const DressStyleSection = () => {
   return (
     <Accordion type="single" collapsible defaultValue="filter-style">
       <AccordionItem value="filter-style" className="border-none">
         <AccordionTrigger className="text-black font-bold text-xl hover:no-underline p-0 py-0.5">
-          Dress Style
+          {t("shop.dressStyle")}
         </AccordionTrigger>
         <AccordionContent className="pt-4 pb-0">
           <div className="flex flex-col text-black/60 space-y-0.5">
-            {dressStylesData.map((dStyle, idx) => (
-              <Link
-                key={idx}
-                href={dStyle.slug}
-                className="flex items-center justify-between py-2"
+            {tree.map((node) => (
+              <button
+                key={node.id}
+                type="button"
+                onClick={() => onSelectCategory(node.id)}
+                className={cn(
+                  "flex items-center justify-between py-2 text-left hover:text-black transition-colors",
+                  selectedCategory === node.id && "text-black font-semibold"
+                )}
               >
-                {dStyle.title} <MdKeyboardArrowRight />
-              </Link>
+                {getLocalizedCategoryName(node, locale, t)}{" "}
+                <MdKeyboardArrowRight />
+              </button>
             ))}
           </div>
         </AccordionContent>
