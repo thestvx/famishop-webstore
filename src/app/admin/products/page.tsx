@@ -128,7 +128,7 @@ export default function AdminProductsPage() {
         </div>
         <button
           type="button"
-          onClick={openAdd}
+          onClick={() => (window.location.href = "/admin/products/new/")}
           className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/80"
         >
           <Plus size={16} /> Add Product
