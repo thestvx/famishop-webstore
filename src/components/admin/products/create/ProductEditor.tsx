@@ -432,7 +432,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       }
       setDirty(false);
       setMsg(t("addProduct.saved"));
-      setTimeout(() => router.push("/admin/products"), 900);
+      setTimeout(() => closeEditor(), 900);
     } catch (e: any) {
       setMsg(e?.message || "Save failed");
     } finally {
@@ -1019,6 +1019,15 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             {saving ? t("addProduct.saving") : t("addProduct.save")}
           </button>
         </div>
+
+        {saving && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+            <div className="bg-white rounded-xl px-6 py-4 flex items-center gap-3 shadow-xl">
+              <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+              <span className="text-sm font-medium">{t("addProduct.uploadingProduct")}</span>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
