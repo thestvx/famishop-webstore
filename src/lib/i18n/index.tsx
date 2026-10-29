@@ -106,6 +106,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "addProduct.browsing": "Browse",
     "addProduct.noResults": "No results",
     "addProduct.noSizes": "No sizes available",
+    "addProduct.clothingSizes": "Clothing sizes",
+    "addProduct.ageSizes": "Age sizes",
     "addProduct.suggestedColors": "Suggested colors",
     "addProduct.allColors": "All colors",
     "addProduct.confirm": "Confirm",

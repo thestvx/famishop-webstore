@@ -32,6 +32,7 @@ type UploadedImage = {
 const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 const SHOE_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45"];
 const HAT_SIZES = ["One Size", "54", "55", "56", "57", "58", "59", "60"];
+const AGE_SIZES = ["0-3 months", "3-6 months", "6-9 months", "9-12 months", "1-2 years", "2-3 years", "3-4 years", "4-5 years", "5-6 years", "6-7 years", "7-8 years", "8-9 years", "9-10 years", "10-11 years", "11-12 years", "12-13 years", "13-14 years", "14-15 years", "15-16 years"];
 
 const COLORS = [
   { name: "Black", hex: "#000000" },
@@ -124,7 +125,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [condition, setCondition] = useState("");
   const [colors, setColors] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
-  const [price, setPrice] = useState("");
+  const [priceUsd, setPriceUsd] = useState("");
+  const [priceEur, setPriceEur] = useState("");
+  const [priceDzd, setPriceDzd] = useState("");
+  const price = priceEur || priceUsd || priceDzd;
   const [packageSize, setPackageSize] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -147,7 +151,12 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             setDescTranslations(data.description_translations);
             setEnabledDescLangs(Object.keys(data.description_translations));
           }
-          setPrice(data.price != null ? String(data.price) : "");
+          setPriceEur(data.price != null ? String(data.price) : "");
+          if (data.prices && typeof data.prices === "object") {
+            setPriceUsd(data.prices.USD != null ? String(data.prices.USD) : "");
+            setPriceEur(data.prices.EUR != null ? String(data.prices.EUR) : (data.price != null ? String(data.price) : ""));
+            setPriceDzd(data.prices.DZD != null ? String(data.prices.DZD) : "");
+          }
           setBrand(data.brand || "");
           setSize(data.size || "");
           setCondition(data.condition || "");
@@ -365,7 +374,12 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         title: title.trim(),
         description: description.trim() || null,
         description_translations: descTranslations,
-        price: Number(price),
+        price: Number(price || 0),
+        prices: {
+          USD: priceUsd ? Number(priceUsd) : null,
+          EUR: priceEur ? Number(priceEur) : null,
+          DZD: priceDzd ? Number(priceDzd) : null,
+        },
         src_url: primaryUrl,
         gallery: urls,
         rating: 0,
@@ -456,7 +470,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             {t("addProduct.browsing")}
           </div>
         )}
-        <div className="mt-2">
+        <div className="mt-2 max-h-[60vh] overflow-y-auto">
           {list.map((item, idx) => {
             const node = item.node;
             const hasChildren = !!node.children && node.children.length > 0;
@@ -486,25 +500,48 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "size") {
     return (
       <ScreenShell title={t("addProduct.size")} onBack={() => setView("main")}>
-        <div className="p-4 grid grid-cols-3 gap-3">
-          {sizes.length === 0 && (
-            <div className="col-span-3 text-sm text-black/50">{t("addProduct.noSizes")}</div>
-          )}
-          {sizes.map((s) => (
-            <button
-              key={s}
-              onClick={() => {
-                setSize(s);
-                setView("main");
-                markDirty();
-              }}
-              className={`py-3 rounded-xl border text-sm font-medium ${
-                size === s ? "bg-black text-white border-black" : "bg-white border-black/10"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div>
+            <div className="text-sm font-semibold mb-2">{t("addProduct.clothingSizes")}</div>
+            <div className="grid grid-cols-3 gap-3">
+              {sizes.length === 0 && <div className="col-span-3 text-sm text-black/50">{t("addProduct.noSizes")}</div>}
+              {sizes.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setSize(s);
+                    setView("main");
+                    markDirty();
+                  }}
+                  className={`py-3 rounded-xl border text-sm font-medium ${
+                    size === s ? "bg-black text-white border-black" : "bg-white border-black/10"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold mb-2">{t("addProduct.ageSizes")}</div>
+            <div className="grid grid-cols-2 gap-3">
+              {AGE_SIZES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setSize(s);
+                    setView("main");
+                    markDirty();
+                  }}
+                  className={`py-3 rounded-xl border text-sm font-medium ${
+                    size === s ? "bg-black text-white border-black" : "bg-white border-black/10"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </ScreenShell>
     );
@@ -513,7 +550,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "condition") {
     return (
       <ScreenShell title={t("addProduct.condition")} onBack={() => setView("main")}>
-        <div className="p-2">
+        <div className="p-2 max-h-[60vh] overflow-y-auto">
           {CONDITIONS.map((c) => (
             <button
               key={c.value}
@@ -545,7 +582,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     };
     return (
       <ScreenShell title={t("addProduct.colors")} onBack={() => setView("main")}>
-        <div className="p-4">
+        <div className="p-4 max-h-[60vh] overflow-y-auto">
           <div className="text-sm font-semibold mb-2">{t("addProduct.suggestedColors")}</div>
           <div className="flex flex-wrap gap-3 mb-6">
             {COLORS.slice(0, 6).map((c) => (
@@ -590,7 +627,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     };
     return (
       <ScreenShell title={t("addProduct.material")} onBack={() => setView("main")}>
-        <div className="p-2">
+        <div className="p-2 max-h-[60vh] overflow-y-auto">
           {MATERIALS.map((m) => (
             <button
               key={m}
@@ -665,20 +702,49 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "price") {
     return (
       <ScreenShell title={t("addProduct.price")} onBack={() => setView("main")}>
-        <div className="p-6 flex flex-col items-center">
-          <div className="text-sm text-black/50 mb-2">{currency}</div>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={price}
-            onChange={(e) => {
-              setPrice(e.target.value);
-              markDirty();
-            }}
-            placeholder="0.00"
-            className="w-full max-w-xs text-center text-3xl font-semibold px-4 py-4 rounded-xl border border-black/10"
-          />
-          <div className="text-xs text-black/40 mt-2">{t("addProduct.priceHint")}</div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-sm text-black/50 mb-1 block">USD ($)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={priceUsd}
+              onChange={(e) => {
+                setPriceUsd(e.target.value);
+                markDirty();
+              }}
+              placeholder="0.00"
+              className="w-full text-center text-2xl font-semibold px-4 py-3 rounded-xl border border-black/10"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-black/50 mb-1 block">EUR (€)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={priceEur}
+              onChange={(e) => {
+                setPriceEur(e.target.value);
+                markDirty();
+              }}
+              placeholder="0.00"
+              className="w-full text-center text-2xl font-semibold px-4 py-3 rounded-xl border border-black/10"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-black/50 mb-1 block">DZD (د.ج)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={priceDzd}
+              onChange={(e) => {
+                setPriceDzd(e.target.value);
+                markDirty();
+              }}
+              placeholder="0.00"
+              className="w-full text-center text-2xl font-semibold px-4 py-3 rounded-xl border border-black/10"
+            />
+          </div>
         </div>
         <BottomBar>
           <button
@@ -695,7 +761,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   if (view === "package") {
     return (
       <ScreenShell title={t("addProduct.packageSize")} onBack={() => setView("main")}>
-        <div className="p-2">
+        <div className="p-2 max-h-[60vh] overflow-y-auto">
           {PACKAGE_SIZES.map((p) => (
             <button
               key={p.value}
