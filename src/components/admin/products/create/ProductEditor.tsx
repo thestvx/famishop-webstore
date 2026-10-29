@@ -114,6 +114,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [title, setTitle] = useState("");
+  const [titleTranslations, setTitleTranslations] = useState<Record<string, string>>({});
   const [description, setDescription] = useState("");
   const [enabledDescLangs, setEnabledDescLangs] = useState<string[]>([]);
   const [descTranslations, setDescTranslations] = useState<Record<string, string>>({});
@@ -146,6 +147,9 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         if (error) throw error;
         if (data) {
           setTitle(data.title || "");
+          if (data.title_translations && typeof data.title_translations === "object") {
+            setTitleTranslations(data.title_translations);
+          }
           setDescription(data.description || "");
           if (data.description_translations && typeof data.description_translations === "object") {
             setDescTranslations(data.description_translations);
@@ -372,6 +376,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
       const fullPayload: any = {
         title: title.trim(),
+        title_translations: titleTranslations,
         status: publishStatus,
         description: description.trim() || null,
         description_translations: descTranslations,
@@ -935,6 +940,11 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
                             delete next[l.code];
                             return next;
                           });
+                          setTitleTranslations((prev) => {
+                            const next = { ...prev };
+                            delete next[l.code];
+                            return next;
+                          });
                           markDirty();
                         } else {
                           setEnabledDescLangs((prev) => [...prev, l.code]);
@@ -948,6 +958,19 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
                               const data = await res.json();
                               if (data?.translated) {
                                 setDescTranslations((prev) => ({ ...prev, [l.code]: data.translated }));
+                              }
+                            } catch {}
+                          }
+                          if (title.trim() && !titleTranslations[l.code]) {
+                            try {
+                              const res = await fetch("/api/translate", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ text: title, source: "auto", target: l.code }),
+                              });
+                              const data = await res.json();
+                              if (data?.translated) {
+                                setTitleTranslations((prev) => ({ ...prev, [l.code]: data.translated }));
                               }
                             } catch {}
                           }
