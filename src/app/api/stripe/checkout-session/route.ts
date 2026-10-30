@@ -255,9 +255,9 @@ export async function POST(req: Request) {
     return {
       ...inc,
       packageSize: product?.package_size || (product as any)?.packageSize || null,
-      weightGrams: product?.weight_grams || (product as any)?.weightGrams || null,
-      weightKg: product?.weight_kg || (product as any)?.weightKg || null,
-      weight_kg: product?.weight_kg || (product as any)?.weight_kg || null,
+      weightGrams: product?.weight_grams || (product as any)?.weightGrams || ((product as any)?.prices?.weightKg ? Math.round(Number((product as any).prices.weightKg) * 1000) : null),
+      weightKg: product?.weight_kg || (product as any)?.weightKg || ((product as any)?.prices?.weightKg ?? null),
+      weight_kg: product?.weight_kg || (product as any)?.weight_kg || ((product as any)?.prices?.weightKg ?? null),
       lengthCm: product?.length_cm || (product as any)?.lengthCm || null,
       widthCm: product?.width_cm || (product as any)?.widthCm || null,
       heightCm: product?.height_cm || (product as any)?.heightCm || null,

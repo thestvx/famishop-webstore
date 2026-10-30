@@ -307,6 +307,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           if (data.weight_kg != null) setWeightKg(String(data.weight_kg));
           else if (data.weight_grams != null) setWeightKg(String(Number(data.weight_grams) / 1000));
           else if (data.weightKg != null) setWeightKg(String(data.weightKg));
+          else if (data.prices && (data.prices as any).weightKg != null) setWeightKg(String((data.prices as any).weightKg));
           else setWeightKg("");
           setCategoryId(data.category || null);
           if (data.category_path) setCategoryPathNames(String(data.category_path).split(" > "));
@@ -574,6 +575,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           USD: priceUsd ? Number(priceUsd) : null,
           EUR: priceEur ? Number(priceEur) : null,
           DZD: priceDzd ? Number(priceDzd) : null,
+          weightKg: weightKg.trim() ? Number(weightKg) : null,
         },
         src_url: primaryUrl,
         gallery: urls,

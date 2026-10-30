@@ -7,6 +7,7 @@ export type PriceMap = {
   USD?: number | null;
   EUR?: number | null;
   DZD?: number | null;
+  weightKg?: number | null;
 };
 
 export type Product = {

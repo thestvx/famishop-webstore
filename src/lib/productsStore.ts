@@ -73,6 +73,7 @@ function normalizeProduct(row: AnyRecord): Product | null {
           USD: row.prices.USD != null ? Number(row.prices.USD) : null,
           EUR: row.prices.EUR != null ? Number(row.prices.EUR) : null,
           DZD: row.prices.DZD != null ? Number(row.prices.DZD) : null,
+          weightKg: row.prices.weightKg != null ? Number(row.prices.weightKg) : null,
         }
       : null;
 
@@ -105,6 +106,8 @@ function normalizeProduct(row: AnyRecord): Product | null {
         ? Math.round(Number(row.weight_kg) * 1000)
         : row.weightKg != null
         ? Math.round(Number(row.weightKg) * 1000)
+        : prices?.weightKg != null
+        ? Math.round(Number(prices.weightKg) * 1000)
         : null,
     weightKg:
       row.weight_kg != null
@@ -113,6 +116,8 @@ function normalizeProduct(row: AnyRecord): Product | null {
         ? Number(row.weight_grams) / 1000
         : row.weightKg != null
         ? Number(row.weightKg)
+        : prices?.weightKg != null
+        ? Number(prices.weightKg)
         : null,
     lengthCm: row.length_cm != null ? Number(row.length_cm) : null,
     widthCm: row.width_cm != null ? Number(row.width_cm) : null,

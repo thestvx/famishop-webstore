@@ -204,9 +204,9 @@ export async function POST(req: Request) {
         trustedItems[i] = {
           ...item,
           packageSize: product.package_size || item.packageSize || null,
-          weightGrams: product.weight_grams != null ? Number(product.weight_grams) : item.weightGrams,
-          weightKg: product.weight_kg != null ? Number(product.weight_kg) : item.weightKg,
-          weight_kg: product.weight_kg != null ? Number(product.weight_kg) : item.weight_kg,
+          weightGrams: product.weight_grams != null ? Number(product.weight_grams) : product.prices?.weightKg != null ? Math.round(Number(product.prices.weightKg) * 1000) : item.weightGrams,
+          weightKg: product.weight_kg != null ? Number(product.weight_kg) : product.weight_grams != null ? Number(product.weight_grams) / 1000 : product.prices?.weightKg != null ? Number(product.prices.weightKg) : item.weightKg,
+          weight_kg: product.weight_kg != null ? Number(product.weight_kg) : product.prices?.weightKg != null ? Number(product.prices.weightKg) : item.weight_kg,
           lengthCm: product.length_cm != null ? Number(product.length_cm) : item.lengthCm,
           widthCm: product.width_cm != null ? Number(product.width_cm) : item.widthCm,
           heightCm: product.height_cm != null ? Number(product.height_cm) : item.heightCm,
