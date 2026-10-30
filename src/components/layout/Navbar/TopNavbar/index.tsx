@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import React from "react";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { NavMenu } from "../navbar.types";
 import { MenuList } from "./MenuList";
 import {
@@ -76,7 +77,14 @@ const getData = (t: (key: string) => string): NavMenu => [
 const TopNavbar = () => {
   const t = useTranslations();
   const { region, setRegion } = useI18n() as any;
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
   const data = getData(t);
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const query = searchTerm.trim();
+    router.push(query ? `/search/?q=${encodeURIComponent(query)}` : "/search/");
+  };
   return (
     <nav className="sticky top-0 bg-white z-20 border-b border-black/5">
       <div className="flex relative max-w-[1380px] mx-auto items-center justify-between gap-2 sm:gap-3 lg:gap-6 py-2.5 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-6 xl:px-10">
@@ -113,24 +121,28 @@ const TopNavbar = () => {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <InputGroup className="hidden lg:flex bg-[#F0F0F0] w-[320px] xl:w-[380px]">
-          <InputGroup.Text>
-            <Image
-              priority
-              src="/icons/search.svg"
-              height={20}
-              width={20}
-              alt="search"
-              className="min-w-5 min-h-5"
+        <form onSubmit={submitSearch} className="hidden lg:block">
+          <InputGroup className="flex bg-[#F0F0F0] w-[320px] xl:w-[380px]">
+            <InputGroup.Text>
+              <Image
+                priority
+                src="/icons/search.svg"
+                height={20}
+                width={20}
+                alt="search"
+                className="min-w-5 min-h-5"
+              />
+            </InputGroup.Text>
+            <InputGroup.Input
+              type="search"
+              name="search"
+              value={searchTerm}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+              placeholder={t("common.searchPlaceholder")}
+              className="bg-transparent placeholder:text-black/40"
             />
-          </InputGroup.Text>
-          <InputGroup.Input
-            type="search"
-            name="search"
-            placeholder={t("common.searchPlaceholder")}
-            className="bg-transparent placeholder:text-black/40"
-          />
-        </InputGroup>
+          </InputGroup>
+        </form>
         <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
           <div className="hidden xl:flex items-center gap-2">
             <button
