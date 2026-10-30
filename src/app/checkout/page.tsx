@@ -10,10 +10,21 @@ import { useI18n } from "@/lib/i18n";
 import ProductImage from "@/components/common/ProductImage";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { cn } from "@/lib/utils";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+function StripeCapture({ onReady }: { onReady: (s: any, e: any) => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  useEffect(() => {
+    if (stripe && elements) onReady(stripe, elements);
+  }, [stripe, elements, onReady]);
+  return null;
+}
 
 type Step = 1 | 2 | 3 | 4;
 type CountryCode = "FR" | "IT";
-type PaymentMethod = "cod" | "dummy_card";
+type PaymentMethod = "cod" | "stripe";
 
 type Customer = {
   firstName: string;
@@ -77,12 +88,13 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
-  const [card, setCard] = useState({
-    number: "4242 4242 4242 4242",
-    expiry: "12/34",
-    cvc: "123",
-    name: "Test Customer",
-  });
+  const [stripePromise] = useState(() =>
+    loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_live_51UVweQCjlPXGToodznu3xEjj0OmQvjKTR0RiGquyJhduBOr24UEbTcNjLrcfPlYJPIodLOGmg7FhoOtDawTogXGs00MtbuV6DY")
+  );
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripeInstance, setStripeInstance] = useState<any>(null);
+  const [elementsInstance, setElementsInstance] = useState<any>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const items = useMemo(() => cart?.items || [], [cart?.items]);
   const shippingFee = selectedOffer?.price || 0;
@@ -109,6 +121,41 @@ export default function CheckoutPage() {
   );
 
   const total = subtotal + shippingFee;
+
+  // Reset client secret when switching away from card.
+  useEffect(() => {
+    if (paymentMethod !== "stripe") setClientSecret(null);
+  }, [paymentMethod]);
+
+  // Create a PaymentIntent when the customer reaches the payment step with card.
+  useEffect(() => {
+    if (step !== 4 || paymentMethod !== "stripe" || clientSecret) return;
+    let active = true;
+    setPaymentLoading(true);
+    (async () => {
+      try {
+        const res = await fetch("/api/stripe/payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: Math.round(total * 100),
+            currency: (window.localStorage.getItem("famishop-currency") || "EUR").toLowerCase(),
+            metadata: { orderTotal: total.toFixed(2) },
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Payment setup failed");
+        if (active) setClientSecret(data.clientSecret);
+      } catch (e: any) {
+        if (active) setSubmitError(e?.message || "Payment setup failed");
+      } finally {
+        if (active) setPaymentLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [step, paymentMethod, clientSecret, total]);
 
   const loadShipping = useCallback(
     async (target: Customer) => {
@@ -175,14 +222,9 @@ export default function CheckoutPage() {
 
   const handleSubmit = async () => {
     setSubmitError(null);
-    if (paymentMethod === "dummy_card") {
-      const digits = card.number.replace(/\D/g, "");
-      if (
-        digits.length < 12 ||
-        !/^\d{2}\/\d{2}$/.test(card.expiry.trim()) ||
-        !/^\d{3,4}$/.test(card.cvc.trim())
-      ) {
-        setSubmitError(t("checkout.invalidCard"));
+    if (paymentMethod === "stripe") {
+      if (!stripeInstance || !elementsInstance || !clientSecret) {
+        setSubmitError(t("checkout.paymentNotReady"));
         return;
       }
     }
@@ -211,14 +253,29 @@ export default function CheckoutPage() {
             }
           : null,
         payment: {
-          method: paymentMethod === "dummy_card" ? "dummy_card" : "cash_on_delivery",
-          status: paymentMethod === "dummy_card" ? "paid" : "pending",
-          reference:
-            paymentMethod === "dummy_card"
-              ? `TEST-${card.number.replace(/\D/g, "").slice(-4)}`
-              : null,
+          method: paymentMethod === "stripe" ? "stripe" : "cash_on_delivery",
+          status: paymentMethod === "stripe" ? "paid" : "pending",
+          reference: null,
         },
       };
+
+      // Confirm card payment with Stripe before creating the order.
+      if (paymentMethod === "stripe") {
+        const { error: stripeError, paymentIntent } = await stripeInstance.confirmPayment({
+          elements: elementsInstance,
+          confirmParams: {
+            return_url: `${window.location.origin}/checkout/success/`,
+          },
+          redirect: "if_required",
+        });
+        if (stripeError) {
+          throw new Error(stripeError.message || t("checkout.paymentFailed"));
+        }
+        if (!paymentIntent || paymentIntent.status !== "succeeded") {
+          throw new Error(t("checkout.paymentFailed"));
+        }
+        payload.payment.reference = paymentIntent.id;
+      }
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -505,59 +562,35 @@ export default function CheckoutPage() {
                 <label
                   className={cn(
                     "flex items-center gap-3 p-4 border rounded-xl cursor-pointer",
-                    paymentMethod === "dummy_card" ? "border-black" : "border-black/10"
+                    paymentMethod === "stripe" ? "border-black" : "border-black/10"
                   )}
                 >
                   <input
                     type="radio"
                     name="payment"
-                    value="dummy_card"
-                    checked={paymentMethod === "dummy_card"}
-                    onChange={() => setPaymentMethod("dummy_card")}
+                    value="stripe"
+                    checked={paymentMethod === "stripe"}
+                    onChange={() => setPaymentMethod("stripe")}
                   />
                   <div>
                     <div className="font-medium">{t("checkout.paymentCard")}</div>
                     <div className="text-sm text-black/50">{t("checkout.paymentCardDesc")}</div>
                   </div>
                 </label>
-                {paymentMethod === "dummy_card" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-black/10 rounded-xl">
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="text-sm font-medium text-black/70">{t("checkout.cardNumber")}</label>
-                      <input
-                        value={card.number}
-                        onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))}
-                        inputMode="numeric"
-                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium text-black/70">{t("checkout.cardExpiry")}</label>
-                      <input
-                        value={card.expiry}
-                        onChange={(e) => setCard((c) => ({ ...c, expiry: e.target.value }))}
-                        placeholder="MM/YY"
-                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-medium text-black/70">{t("checkout.cardCvc")}</label>
-                      <input
-                        value={card.cvc}
-                        onChange={(e) => setCard((c) => ({ ...c, cvc: e.target.value }))}
-                        inputMode="numeric"
-                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
-                      />
-                    </div>
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="text-sm font-medium text-black/70">{t("checkout.cardName")}</label>
-                      <input
-                        value={card.name}
-                        onChange={(e) => setCard((c) => ({ ...c, name: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
-                      />
-                    </div>
-                    <div className="sm:col-span-2 text-xs text-amber-600">{t("checkout.testCardNote")}</div>
+                {paymentMethod === "stripe" && (
+                  <div className="p-4 border border-black/10 rounded-xl space-y-3">
+                    {paymentLoading && (
+                      <div className="text-sm text-black/50">{t("checkout.paymentLoading")}</div>
+                    )}
+                    {!paymentLoading && clientSecret && stripePromise && (
+                      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
+                        <StripeCapture onReady={(s, e) => { setStripeInstance(s); setElementsInstance(e); }} />
+                        <PaymentElement />
+                      </Elements>
+                    )}
+                    {!paymentLoading && !clientSecret && submitError && (
+                      <div className="text-sm text-red-500">{submitError}</div>
+                    )}
                   </div>
                 )}
                 {submitError && <div className="text-sm text-red-500">{submitError}</div>}
