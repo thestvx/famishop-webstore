@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 type IncomingItem = {
   id: number | string;
   quantity: number;
+  packageSize?: string | null;
 };
 
 type QuoteOffer = {
@@ -32,13 +33,40 @@ function credentials() {
   return Buffer.from(`${access}:${secret}`).toString("base64");
 }
 
+const SIZE_MAP: Record<string, { weight: number; length: number; width: number; height: number }> = {
+  small: { weight: 0.3, length: 20, width: 15, height: 5 },
+  medium: { weight: 0.8, length: 30, width: 20, height: 10 },
+  large: { weight: 1.5, length: 40, width: 30, height: 20 },
+};
+
+function sizeFor(item: IncomingItem) {
+  const key = String(item.packageSize || "").toLowerCase();
+  return SIZE_MAP[key] || SIZE_MAP.medium;
+}
+
 function packageForItems(items: IncomingItem[]) {
   const quantity = items.reduce(
     (sum, item) => sum + Math.max(1, Math.round(Number(item.quantity) || 1)),
     0
   );
-  const weight = Math.max(1, Math.round(quantity * ITEM_WEIGHT * 10) / 10);
-  return { weight, length: 30, width: 20, height: 10, quantity };
+  let weight = 0;
+  let length = 0;
+  let width = 0;
+  let height = 0;
+  for (const item of items) {
+    const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
+    const s = sizeFor(item);
+    weight += s.weight * qty;
+    length = Math.max(length, s.length);
+    width = Math.max(width, s.width);
+    height = Math.max(height, s.height);
+  }
+  weight = Math.max(0.1, Math.round(weight * 10) / 10);
+  if (weight < 1) weight = 1; // Boxtal minimum 1 kg
+  length = length || 30;
+  width = width || 20;
+  height = height || 10;
+  return { weight, length, width, height, quantity };
 }
 
 function tag(block: string, name: string): string {

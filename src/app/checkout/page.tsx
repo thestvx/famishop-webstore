@@ -188,7 +188,7 @@ export default function CheckoutPage() {
             country: target.country,
             postalCode: target.postalCode.trim(),
             city: target.city.trim(),
-            items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
+            items: items.map((item) => ({ id: item.id, quantity: item.quantity, packageSize: (item as any).packageSize || null })),
           }),
         });
         const data = await res.json();

@@ -34,19 +34,40 @@ async function resolveShippingBase(input: {
   if (!input.postalCode || !input.city) return fallback;
 
   try {
-    const itemWeight = Number(process.env.BOXTAL_DEFAULT_ITEM_WEIGHT_KG || 0.5);
+    const SIZE_MAP: Record<string, { weight: number; length: number; width: number; height: number }> = {
+      small: { weight: 0.3, length: 20, width: 15, height: 5 },
+      medium: { weight: 0.8, length: 30, width: 20, height: 10 },
+      large: { weight: 1.5, length: 40, width: 30, height: 20 },
+    };
+    let weight = 0;
+    let length = 0;
+    let width = 0;
+    let height = 0;
     const quantity = input.items.reduce(
       (sum, item) => sum + Math.max(1, Math.round(Number(item.quantity) || 1)),
       0
     );
-    const weight = Math.max(1, Math.round(quantity * itemWeight * 10) / 10);
+    for (const item of input.items) {
+      const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
+      const key = String((item as any).packageSize || "").toLowerCase();
+      const s = SIZE_MAP[key] || SIZE_MAP.medium;
+      weight += s.weight * qty;
+      length = Math.max(length, s.length);
+      width = Math.max(width, s.width);
+      height = Math.max(height, s.height);
+    }
+    weight = Math.max(0.1, Math.round(weight * 10) / 10);
+    if (weight < 1) weight = 1;
+    length = length || 30;
+    width = width || 20;
+    height = height || 10;
     const now = new Date();
     const pad = (value: number) => String(value).padStart(2, "0");
     const params = new URLSearchParams({
       "colis_1.poids": String(weight),
-      "colis_1.longueur": "30",
-      "colis_1.largeur": "20",
-      "colis_1.hauteur": "10",
+      "colis_1.longueur": String(length),
+      "colis_1.largeur": String(width),
+      "colis_1.hauteur": String(height),
       code_contenu: process.env.BOXTAL_CONTENT_CODE || "40110",
       "expediteur.pays": process.env.BOXTAL_SHIPPER_COUNTRY || "FR",
       "expediteur.code_postal": process.env.BOXTAL_SHIPPER_POSTAL_CODE || "75001",
@@ -213,11 +234,18 @@ export async function POST(req: Request) {
   const subtotal = Math.round(subtotalBase * rate * 100) / 100;
   const discount = 0;
   const shippingSelection = body?.shipping || {};
+  const shippingItems = incomingItems.map((inc) => {
+    const product: any = productMap.get(Number(inc.id));
+    return {
+      ...inc,
+      packageSize: product?.package_size || (product as any)?.packageSize || null,
+    };
+  });
   const shippingBase = await resolveShippingBase({
     country,
     postalCode: String(customer.postalCode || "").trim(),
     city,
-    items: incomingItems,
+    items: shippingItems,
     selected: {
       operator: shippingSelection.operator,
       service: shippingSelection.service,

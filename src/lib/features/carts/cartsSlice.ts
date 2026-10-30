@@ -31,6 +31,7 @@ export type CartItem = {
   discount: Discount;
   quantity: number;
   stock?: number | null;
+  packageSize?: string | null;
 };
 
 export type Cart = {

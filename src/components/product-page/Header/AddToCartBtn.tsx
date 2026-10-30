@@ -31,6 +31,7 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
         discount: data.discount,
         stock: data.stock,
         quantity: data.quantity,
+        packageSize: (data as any).packageSize || (data as any).package_size || null,
       })
     );
     window.setTimeout(() => setAnimating(false), 650);
