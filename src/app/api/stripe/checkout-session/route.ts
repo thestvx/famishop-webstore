@@ -323,7 +323,7 @@ export async function POST(req: Request) {
     automatic_tax: { enabled: false },
     allow_promotion_codes: false,
     submit_type: "auto",
-    consent_collection: { terms_of_service: "required" },
+    // consent_collection: { terms_of_service: "required" }, // requires ToS URL in Stripe Dashboard
     integration_identifier: "hosted_web_0001",
     success_url: `${domain}/checkout/success/?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
     cancel_url: `${domain}/checkout/`,

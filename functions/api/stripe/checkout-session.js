@@ -2,154 +2,123 @@ const BOXTAL_BASE = "https://www.envoimoinscher.com/api/v1";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const secret = env.STRIPE_SECRET_KEY;
-  if (!secret) return json({ error: "Stripe is not configured (STRIPE_SECRET_KEY)" }, 500);
-
-  const supabaseUrl =
-    env.NEXT_PUBLIC_SUPABASE_URL ||
-    env.SUPABASE_URL ||
-    "https://lahorqznlrzdlupveoja.supabase.co";
-  const supabaseKey =
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    env.SUPABASE_ANON_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhaG9ycXpubHJ6ZGx1cHZlb2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjQzNjgsImV4cCI6MjEwODcwMDM2OH0.5qGE1B8hQUxW113xKEI6oW9NoIraAkmacMFbb1kCRws";
-  if (!supabaseUrl || !supabaseKey) return json({ error: "Supabase is not configured" }, 500);
-
-  let body;
   try {
-    body = await request.json();
-  } catch {
-    return json({ error: "Invalid JSON" }, 400);
-  }
+    const secret = env.STRIPE_SECRET_KEY;
+    if (!secret) return json({ error: "Stripe is not configured (STRIPE_SECRET_KEY)" }, 500);
 
-  const currency = ["EUR", "USD", "DZD"].includes(body?.currency) ? body.currency : "EUR";
-  const customer = body?.customer || {};
-  const incomingItems = Array.isArray(body?.items) ? body.items : [];
-  if (incomingItems.length === 0) return json({ error: "Cart is empty" }, 400);
+    const supabaseUrl =
+      env.NEXT_PUBLIC_SUPABASE_URL ||
+      env.SUPABASE_URL ||
+      "https://lahorqznlrzdlupveoja.supabase.co";
+    const supabaseKey =
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      env.SUPABASE_ANON_KEY ||
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhaG9ycXpubHJ6ZGx1cHZlb2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjQzNjgsImV4cCI6MjEwODcwMDM2OH0.5qGE1B8hQUxW113xKEI6oW9NoIraAkmacMFbb1kCRws";
+    if (!supabaseUrl || !supabaseKey) return json({ error: "Supabase is not configured" }, 500);
 
-  const firstName = String(customer.firstName || "").trim();
-  const lastName = String(customer.lastName || "").trim();
-  const email = String(customer.email || "").trim();
-  const phone = String(customer.phone || "").trim();
-  const country = String(customer.country || "").trim();
-  const city = String(customer.city || "").trim();
-  const address = String(customer.address || "").trim();
-  if (!firstName || !lastName || !email || !phone || !country || !city || !address) {
-    return json({ error: "Missing required customer fields" }, 400);
-  }
-
-  // fetch products
-  const ids = incomingItems.map((i) => Number(i.id)).filter((n) => Number.isFinite(n));
-  const prodRes = await fetch(`${supabaseUrl}/rest/v1/products?select=*&id=in.(${ids.join(",")})`, {
-    headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-  });
-  if (!prodRes.ok) return json({ error: await prodRes.text() }, 500);
-  const products = await prodRes.json();
-  const productMap = new Map((products || []).map((p) => [Number(p.id), p]));
-
-  const rate = await getRate(currency, env);
-
-  const items = [];
-  let subtotalBase = 0;
-  const lineItems = [];
-  for (const incoming of incomingItems) {
-    const product = productMap.get(Number(incoming.id));
-    if (!product) return json({ error: `Product ${incoming.id} not found` }, 400);
-    if (product.status && product.status !== "published") {
-      return json({ error: `Product ${incoming.id} is unavailable` }, 400);
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON" }, 400);
     }
-    const qty = Math.max(1, Math.round(Number(incoming.quantity) || 1));
-    if (product.stock != null && qty > Number(product.stock)) {
-      return json({ error: `Insufficient stock for product ${incoming.id}` }, 400);
+
+    const currency = ["EUR", "USD", "DZD"].includes(body?.currency) ? body.currency : "EUR";
+    const customer = body?.customer || {};
+    const incomingItems = Array.isArray(body?.items) ? body.items : [];
+    if (incomingItems.length === 0) return json({ error: "Cart is empty" }, 400);
+
+    const firstName = String(customer.firstName || "").trim();
+    const lastName = String(customer.lastName || "").trim();
+    const email = String(customer.email || "").trim();
+    const phone = String(customer.phone || "").trim();
+    const country = String(customer.country || "").trim();
+    const city = String(customer.city || "").trim();
+    const address = String(customer.address || "").trim();
+    if (!firstName || !lastName || !email || !phone || !country || !city || !address) {
+      return json({ error: "Missing required customer fields" }, 400);
     }
-    const basePrice = Number(product.price || 0);
-    subtotalBase += basePrice * qty;
-    const name = (product.title_translations && product.title_translations.en) || product.title || "Product";
-    items.push({
-      id: Number(product.id),
-      name,
-      srcUrl: product.src_url || (Array.isArray(product.gallery) ? product.gallery[0] : ""),
-      price: Math.round(basePrice * rate * 100) / 100,
-      quantity: qty,
-      attributes: Array.isArray(incoming.attributes) ? incoming.attributes : [],
-      discount: product.discount || { amount: 0, percentage: 0 },
+
+    const ids = incomingItems.map((i) => Number(i.id)).filter((n) => Number.isFinite(n));
+    const prodRes = await fetch(`${supabaseUrl}/rest/v1/products?select=*&id=in.(${ids.join(",")})`, {
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
     });
-    lineItems.push({
-      price_data: {
-        currency: currency.toLowerCase(),
-        product_data: { name },
-        unit_amount: Math.round(basePrice * rate * 100),
+    if (!prodRes.ok) return json({ error: await prodRes.text() }, 500);
+    const products = await prodRes.json();
+    const productMap = new Map((products || []).map((p) => [Number(p.id), p]));
+
+    const rate = await getRate(currency, env);
+
+    const items = [];
+    let subtotalBase = 0;
+    const lineItems = [];
+    for (const incoming of incomingItems) {
+      const product = productMap.get(Number(incoming.id));
+      if (!product) return json({ error: `Product ${incoming.id} not found` }, 400);
+      if (product.status && product.status !== "published") {
+        return json({ error: `Product ${incoming.id} is unavailable` }, 400);
+      }
+      const qty = Math.max(1, Math.round(Number(incoming.quantity) || 1));
+      if (product.stock != null && qty > Number(product.stock)) {
+        return json({ error: `Insufficient stock for product ${incoming.id}` }, 400);
+      }
+      const basePrice = Number(product.price || 0);
+      subtotalBase += basePrice * qty;
+      const name = (product.title_translations && product.title_translations.en) || product.title || "Product";
+      items.push({
+        id: Number(product.id),
+        name,
+        srcUrl: product.src_url || (Array.isArray(product.gallery) ? product.gallery[0] : ""),
+        price: Math.round(basePrice * rate * 100) / 100,
+        quantity: qty,
+        attributes: Array.isArray(incoming.attributes) ? incoming.attributes : [],
+        discount: product.discount || { amount: 0, percentage: 0 },
+      });
+      lineItems.push({
+        price_data: {
+          currency: currency.toLowerCase(),
+          product_data: { name },
+          unit_amount: Math.round(basePrice * rate * 100),
+        },
+        quantity: qty,
+      });
+    }
+
+    const subtotal = round(subtotalBase * rate);
+    const shippingSelection = body?.shipping || {};
+    const shippingBase = await resolveShippingBase({
+      country,
+      postalCode: String(customer.postalCode || "").trim(),
+      city,
+      items: incomingItems,
+      selected: {
+        operator: shippingSelection.operator,
+        service: shippingSelection.service,
+        price: shippingSelection.price,
       },
-      quantity: qty,
+      env,
     });
-  }
+    const shippingFee = round(shippingBase * rate);
+    const tax = 0;
+    const total = round(subtotal + shippingFee + tax);
 
-  const subtotal = round(subtotalBase * rate);
-  const shippingSelection = body?.shipping || {};
-  const shippingBase = await resolveShippingBase({
-    country,
-    postalCode: String(customer.postalCode || "").trim(),
-    city,
-    items: incomingItems,
-    selected: {
-      operator: shippingSelection.operator,
-      service: shippingSelection.service,
-      price: shippingSelection.price,
-    },
-    env,
-  });
-  const shippingFee = round(shippingBase * rate);
-  const tax = 0;
-  const total = round(subtotal + shippingFee + tax);
+    if (shippingFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: currency.toLowerCase(),
+          product_data: { name: shippingSelection.label || "Shipping" },
+          unit_amount: Math.round(shippingFee * 100),
+        },
+        quantity: 1,
+      });
+    }
 
-  if (shippingFee > 0) {
-    lineItems.push({
-      price_data: {
-        currency: currency.toLowerCase(),
-        product_data: { name: shippingSelection.label || "Shipping" },
-        unit_amount: Math.round(shippingFee * 100),
-      },
-      quantity: 1,
-    });
-  }
+    const shippingMethodLabel =
+      shippingSelection.label ||
+      [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
+      "standard";
 
-  const shippingMethodLabel =
-    shippingSelection.label ||
-    [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
-    "standard";
-
-  const shippingAddress = {
-    firstName,
-    lastName,
-    email,
-    phone,
-    country,
-    city,
-    address,
-    postalCode: customer.postalCode || null,
-    region: customer.region || null,
-  };
-
-  const payload = {
-    customer_name: `${firstName} ${lastName}`.trim(),
-    customer_email: email,
-    customer_phone: phone,
-    shipping_address: shippingAddress,
-    shipping_method: shippingMethodLabel,
-    shipping_fee: shippingFee,
-    currency,
-    subtotal,
-    discount: 0,
-    tax,
-    total,
-    status: "pending",
-    payment_status: "pending",
-    payment_method: "stripe",
-    payment_reference: null,
-    items,
-    notes: body?.notes || null,
-    customer: JSON.stringify({
-      name: `${firstName} ${lastName}`.trim(),
+    const shippingAddress = {
       firstName,
       lastName,
       email,
@@ -159,92 +128,121 @@ export async function onRequestPost(context) {
       address,
       postalCode: customer.postalCode || null,
       region: customer.region || null,
-      shippingAddress,
-      shippingMethod: shippingMethodLabel,
-      shippingFee,
+    };
+
+    const payload = {
+      customer_name: `${firstName} ${lastName}`.trim(),
+      customer_email: email,
+      customer_phone: phone,
+      shipping_address: shippingAddress,
+      shipping_method: shippingMethodLabel,
+      shipping_fee: shippingFee,
       currency,
       subtotal,
       discount: 0,
       tax,
       total,
       status: "pending",
-      paymentStatus: "pending",
-      paymentMethod: "stripe",
+      payment_status: "pending",
+      payment_method: "stripe",
+      payment_reference: null,
       items,
       notes: body?.notes || null,
-    }),
-  };
+      customer: JSON.stringify({
+        name: `${firstName} ${lastName}`.trim(),
+        firstName,
+        lastName,
+        email,
+        phone,
+        country,
+        city,
+        address,
+        postalCode: customer.postalCode || null,
+        region: customer.region || null,
+        shippingAddress,
+        shippingMethod: shippingMethodLabel,
+        shippingFee,
+        currency,
+        subtotal,
+        discount: 0,
+        tax,
+        total,
+        status: "pending",
+        paymentStatus: "pending",
+        paymentMethod: "stripe",
+        items,
+        notes: body?.notes || null,
+      }),
+    };
 
-  // persist order with column fallback
-  let orderId = null;
-  let current = { ...payload };
-  for (let attempt = 0; attempt < 30; attempt++) {
-    const res = await fetch(`${supabaseUrl}/rest/v1/orders`, {
-      method: "POST",
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify(current),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      orderId = Array.isArray(data) ? data[0]?.id : data?.id;
-      break;
-    }
-    const text = await res.text();
-    const missing = extractMissingColumn(text);
-    if (missing && Object.prototype.hasOwnProperty.call(current, missing)) {
-      delete current[missing];
-      continue;
-    }
-    return json({ error: text || "Failed to create order" }, 500);
-  }
-  if (!orderId) return json({ error: "Could not create order" }, 500);
-
-  const domain = env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev";
-  const sessionParams = {
-    ui_mode: "hosted_page",
-    mode: "payment",
-    billing_address_collection: "auto",
-    phone_number_collection: { enabled: false },
-    automatic_tax: { enabled: false },
-    allow_promotion_codes: false,
-    submit_type: "auto",
-    consent_collection: { terms_of_service: "required" },
-    integration_identifier: "hosted_web_0001",
-    success_url: `${domain}/checkout/success/?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
-    cancel_url: `${domain}/checkout/`,
-    line_items: lineItems,
-    branding_settings: {
-      background_color: "#ffffff",
-      button_color: "#000000",
-      font_family: "default",
-      border_style: "rounded",
-      icon: { type: "file", file: "file_1UWHL3CjlPXGToodIVhfQlG2" },
-    },
-  };
-
-  function append(key, value) {
-    if (value === null || value === undefined) return;
-    if (Array.isArray(value)) {
-      value.forEach((v, i) => append(`${key}[${i}]`, v));
-    } else if (typeof value === "object") {
-      for (const [k, v] of Object.entries(value)) {
-        append(`${key}[${k}]`, v);
+    let orderId = null;
+    let current = { ...payload };
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const res = await fetch(`${supabaseUrl}/rest/v1/orders`, {
+        method: "POST",
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(current),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        orderId = Array.isArray(data) ? data[0]?.id : data?.id;
+        break;
       }
-    } else {
-      params2.append(key, String(value));
+      const text = await res.text();
+      const missing = extractMissingColumn(text);
+      if (missing && Object.prototype.hasOwnProperty.call(current, missing)) {
+        delete current[missing];
+        continue;
+      }
+      return json({ error: text || "Failed to create order" }, 500);
     }
-  }
-  const params2 = new URLSearchParams();
-  for (const [k, v] of Object.entries(sessionParams)) {
-    append(k, v);
-  }
+    if (!orderId) return json({ error: "Could not create order" }, 500);
 
-  try {
+    const domain = env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev";
+    const sessionParams = {
+      ui_mode: "hosted_page",
+      mode: "payment",
+      billing_address_collection: "auto",
+      phone_number_collection: { enabled: false },
+      automatic_tax: { enabled: false },
+      allow_promotion_codes: false,
+      submit_type: "auto",
+      // consent_collection: { terms_of_service: "required" },
+      integration_identifier: "hosted_web_0001",
+      success_url: `${domain}/checkout/success/?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
+      cancel_url: `${domain}/checkout/`,
+      line_items: lineItems,
+      branding_settings: {
+        background_color: "#ffffff",
+        button_color: "#000000",
+        font_family: "default",
+        border_style: "rounded",
+        icon: { type: "file", file: "file_1UWHL3CjlPXGToodIVhfQlG2" },
+      },
+    };
+
+    const params2 = new URLSearchParams();
+    function append(key, value) {
+      if (value === null || value === undefined) return;
+      if (Array.isArray(value)) {
+        value.forEach((v, i) => append(`${key}[${i}]`, v));
+      } else if (typeof value === "object") {
+        for (const [k, v] of Object.entries(value)) {
+          append(`${key}[${k}]`, v);
+        }
+      } else {
+        params2.append(key, String(value));
+      }
+    }
+    for (const [k, v] of Object.entries(sessionParams)) {
+      append(k, v);
+    }
+
     const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
@@ -259,7 +257,7 @@ export async function onRequestPost(context) {
     }
     return json({ url: data.url, sessionId: data.id, orderId });
   } catch (e) {
-    return json({ error: e?.message || "Stripe request failed" }, 502);
+    return json({ error: e?.message || "Unknown error" }, 500);
   }
 }
 
