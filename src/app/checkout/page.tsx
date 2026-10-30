@@ -394,7 +394,7 @@ export default function CheckoutPage() {
                       if (group.length === 0) return null;
                       return (
                         <div key={cat} className="space-y-2">
-                          <div className="text-xs font-bold uppercase tracking-wide text-black/50 pt-2">
+                          <div className="text-xs font-bold tracking-wide text-black/50 pt-2">
                             {t(`checkout.shippingCategory.${cat}`)}
                           </div>
                           {group.map((offer) => {
