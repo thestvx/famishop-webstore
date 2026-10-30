@@ -84,8 +84,9 @@ export async function onRequestPost(context) {
       });
     }
 
-    const subtotal = round(subtotalBase * rate);
-    const shippingSelection = body?.shipping || {};
+  const subtotal = round(subtotalBase * rate);
+  const discount = body?.discount || null;
+  const shippingSelection = body?.shipping || {};
     const shippingBase = await resolveShippingBase({
       country,
       postalCode: String(customer.postalCode || "").trim(),
@@ -138,16 +139,19 @@ export async function onRequestPost(context) {
       shipping_method: shippingMethodLabel,
       shipping_fee: shippingFee,
       currency,
-      subtotal,
-      discount: 0,
-      tax,
-      total,
+    subtotal,
+    discount: Number(discount?.amount) || 0,
+    discount_code: discount?.code || null,
+    discount_id: discount?.id || null,
+    tax,
+    total,
       status: "pending",
       payment_status: "pending",
       payment_method: "stripe",
       payment_reference: null,
       items,
       notes: body?.notes || null,
+      cart_id: body?.cartId || null,
       customer: JSON.stringify({
         name: `${firstName} ${lastName}`.trim(),
         firstName,
@@ -164,7 +168,7 @@ export async function onRequestPost(context) {
         shippingFee,
         currency,
         subtotal,
-        discount: 0,
+        discount: Number(discount?.amount) || 0,
         tax,
         total,
         status: "pending",
@@ -203,8 +207,31 @@ export async function onRequestPost(context) {
     }
     if (!orderId) return json({ error: "Could not create order" }, 500);
 
-    const domain = env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev";
-    const sessionParams = {
+  let couponId = null;
+  if (discount && Number(discount.amount) > 0) {
+    const couponParams = new URLSearchParams();
+    couponParams.append("amount_off", String(Math.round(Number(discount.amount) * 100)));
+    couponParams.append("currency", currency.toLowerCase());
+    couponParams.append("name", `${discount.code} - ${discount.name}`);
+    couponParams.append("duration", "once");
+    try {
+      const cRes = await fetch("https://api.stripe.com/v1/coupons", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: couponParams.toString(),
+      });
+      const cData = await cRes.json();
+      if (cRes.ok && cData?.id) couponId = cData.id;
+    } catch {
+      // ignore
+    }
+  }
+
+  const domain = env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev";
+  const sessionParams = {
       ui_mode: "hosted_page",
       mode: "payment",
       billing_address_collection: "auto",
@@ -216,8 +243,9 @@ export async function onRequestPost(context) {
       integration_identifier: "hosted_web_0001",
       success_url: `${domain}/checkout/success/?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
       cancel_url: `${domain}/checkout/`,
-      line_items: lineItems,
-      branding_settings: {
+    line_items: lineItems,
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
+    branding_settings: {
         background_color: "#ffffff",
         button_color: "#000000",
         font_family: "default",

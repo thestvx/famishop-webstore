@@ -147,6 +147,7 @@ export async function onRequestPost(context) {
     payment_reference: paymentReference,
     items,
     notes: body?.notes || null,
+    cart_id: body?.cartId || null,
     customer: JSON.stringify(customerSnapshot),
   };
 

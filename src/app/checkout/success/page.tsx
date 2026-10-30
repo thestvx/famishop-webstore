@@ -2,11 +2,14 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useAppDispatch } from "@/lib/hooks/redux";
+import { clearCart } from "@/lib/features/carts/cartsSlice";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 
 function SuccessContent() {
   const { t } = useI18n();
+  const dispatch = useAppDispatch();
   const params = useSearchParams();
   const orderId = params.get("orderId");
   const sessionId = params.get("session_id");
@@ -27,7 +30,13 @@ function SuccessContent() {
           body: JSON.stringify({ sessionId, orderId }),
         });
         const data = await res.json();
-        if (active) setStatus(data?.paid ? "paid" : data?.paymentStatus || "unknown");
+        if (active) {
+          setStatus(data?.paid ? "paid" : data?.paymentStatus || "unknown");
+          if (data?.paid) {
+            dispatch(clearCart());
+            try { window.localStorage.removeItem("famishop-checkout"); } catch {}
+          }
+        }
       } catch {
         if (active) setStatus("unknown");
       } finally {
@@ -37,7 +46,7 @@ function SuccessContent() {
     return () => {
       active = false;
     };
-  }, [sessionId, orderId]);
+  }, [sessionId, orderId, dispatch]);
 
   return (
     <main className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">

@@ -44,6 +44,7 @@ alter table orders add column if not exists payment_reference text;
 alter table orders add column if not exists items jsonb default '[]'::jsonb;
 alter table orders add column if not exists notes text;
 alter table orders add column if not exists customer text;
+alter table orders add column if not exists cart_id text;
 alter table orders add column if not exists idempotency_key text;
 
 create unique index if not exists orders_idempotency_key_key on orders (idempotency_key);
@@ -64,3 +65,8 @@ create policy "orders are insertable by everyone"
 drop policy if exists "orders are updatable by everyone" on orders;
 create policy "orders are updatable by everyone"
   on orders for update using (true) with check (true);
+
+-- Allow the admin dashboard to delete orders
+drop policy if exists "orders are deletable by everyone" on orders;
+create policy "orders are deletable by everyone"
+  on orders for delete using (true);

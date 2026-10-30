@@ -293,6 +293,7 @@ export async function POST(req: Request) {
     payment_reference: paymentReference,
     items,
     notes: body?.notes || null,
+    cart_id: body?.cartId || null,
     customer: JSON.stringify(customerSnapshot),
   };
 

@@ -245,6 +245,8 @@ export async function POST(req: Request) {
     });
   }
 
+  const discount = body?.discount || null;
+
   const shippingMethodLabel =
     shippingSelection.label ||
     [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
@@ -271,7 +273,9 @@ export async function POST(req: Request) {
     shipping_fee: shippingFee,
     currency,
     subtotal,
-    discount: 0,
+    discount: Number(discount?.amount) || 0,
+    discount_code: discount?.code || null,
+    discount_id: discount?.id || null,
     tax,
     total,
     status: "pending",
@@ -280,6 +284,7 @@ export async function POST(req: Request) {
     payment_reference: null,
     items,
     notes: body?.notes || null,
+    cart_id: body?.cartId || null,
     customer: JSON.stringify({
       name: `${firstName} ${lastName}`.trim(),
       firstName,
@@ -296,7 +301,7 @@ export async function POST(req: Request) {
       shippingFee,
       currency,
       subtotal,
-      discount: 0,
+      discount: Number(discount?.amount) || 0,
       tax,
       total,
       status: "pending",
@@ -314,6 +319,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Failed to create order" }, { status: 500 });
   }
 
+  // Create a Stripe coupon for the applied promo code (if any).
+  let couponId: string | null = null;
+  if (discount && Number(discount.amount) > 0) {
+    const couponParams = new URLSearchParams();
+    couponParams.append("amount_off", String(Math.round(Number(discount.amount) * 100)));
+    couponParams.append("currency", currency.toLowerCase());
+    couponParams.append("name", `${discount.code} - ${discount.name}`);
+    couponParams.append("duration", "once");
+    try {
+      const cRes = await fetch("https://api.stripe.com/v1/coupons", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${STRIPE_SECRET}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: couponParams.toString(),
+      });
+      const cData = await cRes.json();
+      if (cRes.ok && cData?.id) couponId = cData.id;
+    } catch {
+      // ignore; proceed without coupon
+    }
+  }
+
   const domain = process.env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev";
   const sessionParams: Record<string, any> = {
     ui_mode: "hosted_page",
@@ -328,6 +357,7 @@ export async function POST(req: Request) {
     success_url: `${domain}/checkout/success/?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
     cancel_url: `${domain}/checkout/`,
     line_items: lineItems,
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     branding_settings: {
       background_color: "#ffffff",
       button_color: "#000000",

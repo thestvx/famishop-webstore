@@ -34,6 +34,7 @@ export type CartItem = {
 };
 
 export type Cart = {
+  cartId: string;
   items: CartItem[];
   totalQuantities: number;
 };
@@ -63,6 +64,7 @@ export const cartsSlice = createSlice({
       // if cart is empty then add
       if (state.cart === null) {
         state.cart = {
+          cartId: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           items: [action.payload],
           totalQuantities: action.payload.quantity,
         };

@@ -9,7 +9,7 @@ import { integralCF } from "@/styles/fonts";
 import { FaArrowRight } from "react-icons/fa6";
 import { MdOutlineLocalOffer } from "react-icons/md";
 import { TbBasketExclamation } from "react-icons/tb";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { RootState } from "@/lib/store";
 import { useAppSelector } from "@/lib/hooks/redux";
 import Link from "next/link";
@@ -20,6 +20,50 @@ export default function CartPage() {
     (state: RootState) => state.carts
   );
   const { t, formatPrice } = useI18n();
+  const [promoCode, setPromoCode] = useState("");
+  const [promo, setPromo] = useState<any>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("famishop-promo");
+      if (raw) setPromo(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const applyPromo = async () => {
+    setPromoError(null);
+    setPromoLoading(true);
+    try {
+      const currency = window.localStorage.getItem("famishop-currency") || "EUR";
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoCode, subtotal: totalPrice, currency }),
+      });
+      const data = await res.json();
+      if (!data?.valid) {
+        setPromoError(data?.message || "Invalid promo code");
+        return;
+      }
+      setPromo(data);
+      window.localStorage.setItem("famishop-promo", JSON.stringify(data));
+      setPromoCode("");
+    } catch (e: any) {
+      setPromoError(e?.message || "Failed to apply promo code");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const removePromo = () => {
+    setPromo(null);
+    window.localStorage.removeItem("famishop-promo");
+  };
+
+  const discountAmount = promo?.amount || 0;
+  const finalTotal = Math.max((adjustedTotalPrice || totalPrice) - discountAmount, 0);
 
   return (
     <main className="pb-20">
@@ -60,7 +104,7 @@ export default function CartPage() {
                       {t("cart.discount")}
                     </span>
                     <span className="md:text-xl font-bold text-red-600">
-                      -{formatPrice(Math.max(totalPrice - adjustedTotalPrice, 0))}
+                      -{formatPrice(discountAmount + Math.max(totalPrice - adjustedTotalPrice, 0))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -73,29 +117,52 @@ export default function CartPage() {
                   <div className="flex items-center justify-between">
                     <span className="md:text-xl text-black">{t("cart.total")}</span>
                     <span className="text-xl md:text-2xl font-bold">
-                      {formatPrice(adjustedTotalPrice || totalPrice)}
+                      {formatPrice(finalTotal)}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-stretch gap-3">
-                  <InputGroup className="bg-[#F0F0F0] flex-1 min-w-0">
-                    <InputGroup.Text>
-                      <MdOutlineLocalOffer className="text-black/40 text-2xl" />
-                    </InputGroup.Text>
-                    <InputGroup.Input
-                      type="text"
-                      name="code"
-                      placeholder={t("cart.promoPlaceholder")}
-                      className="bg-transparent placeholder:text-black/40"
-                    />
-                  </InputGroup>
-                  <Button
-                    type="button"
-                    className="bg-black rounded-full w-[119px] shrink-0 h-[48px]"
-                  >
-                    {t("cart.apply")}
-                  </Button>
-                </div>
+                {promo ? (
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
+                    <div className="text-sm">
+                      <span className="font-medium">{promo.code}</span>
+                      <span className="text-black/60 ml-2">
+                        -{formatPrice(promo.amount)} ({promo.name})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removePromo}
+                      className="text-xs font-medium text-red-600 hover:underline"
+                    >
+                      {t("cart.removePromo")}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-stretch gap-3">
+                    <InputGroup className="bg-[#F0F0F0] flex-1 min-w-0">
+                      <InputGroup.Text>
+                        <MdOutlineLocalOffer className="text-black/40 text-2xl" />
+                      </InputGroup.Text>
+                      <InputGroup.Input
+                        type="text"
+                        name="code"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value)}
+                        placeholder={t("cart.promoPlaceholder")}
+                        className="bg-transparent placeholder:text-black/40"
+                      />
+                    </InputGroup>
+                    <Button
+                      type="button"
+                      onClick={applyPromo}
+                      disabled={promoLoading || !promoCode.trim()}
+                      className="bg-black rounded-full w-[119px] shrink-0 h-[48px] disabled:opacity-50"
+                    >
+                      {promoLoading ? "..." : t("cart.apply")}
+                    </Button>
+                  </div>
+                )}
+                {promoError && <div className="text-xs text-red-500">{promoError}</div>}
                 <Link href="/checkout" className="block w-full">
                   <Button
                     type="button"
@@ -112,8 +179,13 @@ export default function CartPage() {
           <div className="flex items-center flex-col text-gray-300 mt-32">
             <TbBasketExclamation strokeWidth={1} className="text-6xl" />
             <span className="block mb-4">{t("cart.empty")}</span>
-            <Button className="rounded-full w-24" asChild>
-              <Link href="/shop">{t("cart.continueShopping")}</Link>
+            <Button
+              asChild
+              className="rounded-full px-8 py-3 h-[48px] text-sm md:text-base font-medium bg-black text-white hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 transition"
+            >
+              <Link href="/shop" className="inline-flex items-center justify-center">
+                {t("cart.continueShopping")}
+              </Link>
             </Button>
           </div>
         )}

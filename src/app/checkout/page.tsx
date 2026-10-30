@@ -78,9 +78,77 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [promo, setPromo] = useState<any>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+
+  // Load applied promo from cart
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("famishop-promo");
+      if (raw) {
+        const saved = JSON.parse(raw);
+        setPromo(saved);
+        setDiscountAmount(saved?.amount || 0);
+      }
+    } catch {}
+  }, []);
+
+  // Re-validate promo on checkout
+  useEffect(() => {
+    if (!promo?.code) return;
+    const currency = window.localStorage.getItem("famishop-currency") || "EUR";
+    (async () => {
+      try {
+        const res = await fetch("/api/discounts/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: promo.code, subtotal, currency, email: customer.email }),
+        });
+        const data = await res.json();
+        if (data?.valid) {
+          setPromo(data);
+          setDiscountAmount(data.amount);
+          window.localStorage.setItem("famishop-promo", JSON.stringify(data));
+        } else {
+          setPromo(null);
+          setDiscountAmount(0);
+          window.localStorage.removeItem("famishop-promo");
+        }
+      } catch {}
+    })();
+  }, [promo?.code]);
+
+  // Restore checkout progress from storage (handles return from payment gateway).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("famishop-checkout");
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved?.step) setStep(saved.step);
+      if (saved?.customer) setCustomer(saved.customer);
+      if (saved?.selectedOffer) setSelectedOffer(saved.selectedOffer);
+      if (saved?.shippingType) setShippingType(saved.shippingType);
+      if (saved?.offers) setOffers(saved.offers);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Persist checkout progress.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "famishop-checkout",
+        JSON.stringify({ step, customer, selectedOffer, shippingType, offers })
+      );
+    } catch {
+      // ignore
+    }
+  }, [step, customer, selectedOffer, shippingType, offers]);
+  const [paymentMethod] = useState<PaymentMethod>("stripe");
 
   const items = useMemo(() => cart?.items || [], [cart?.items]);
+  const cartId = cart?.cartId || null;
   const shippingFee = selectedOffer?.price || 0;
   const phonePrefix = PHONE_PREFIX[customer.country];
 
@@ -104,7 +172,7 @@ export default function CheckoutPage() {
     [items]
   );
 
-  const total = subtotal + shippingFee;
+  const total = Math.max(subtotal + shippingFee - discountAmount, 0);
 
   const loadShipping = useCallback(
     async (target: Customer) => {
@@ -205,22 +273,19 @@ export default function CheckoutPage() {
           status: "pending",
           reference: null,
         },
+        cartId,
+        discount: promo
+          ? {
+              id: promo.discountId,
+              code: promo.code,
+              name: promo.name,
+              type: promo.type,
+              value: promo.value,
+              amount: discountAmount,
+              currency: promo.currency,
+            }
+          : null,
       };
-
-      // COD: create order directly.
-      if (paymentMethod === "cod") {
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Order failed");
-        setOrderPlaced(true);
-        dispatch(clearCart());
-        router.push(`/checkout/success/?orderId=${data.orderId}`);
-        return;
-      }
 
       // Stripe: create Checkout Session and redirect to hosted payment page.
       const res = await fetch("/api/stripe/checkout-session", {
@@ -231,7 +296,7 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Order failed");
       setOrderPlaced(true);
-      dispatch(clearCart());
+      // Keep the cart until payment is confirmed; cleared in success page.
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -521,47 +586,13 @@ export default function CheckoutPage() {
 
             {step === 4 && (
               <div className="space-y-3">
-                <label
-                  className={cn(
-                    "flex items-center gap-3 p-4 border rounded-xl cursor-pointer",
-                    paymentMethod === "cod" ? "border-black" : "border-black/10"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="cod"
-                    checked={paymentMethod === "cod"}
-                    onChange={() => setPaymentMethod("cod")}
-                  />
-                  <div>
-                    <div className="font-medium">{t("checkout.paymentCOD")}</div>
-                    <div className="text-sm text-black/50">{t("checkout.paymentCODDesc")}</div>
-                  </div>
-                </label>
-                <label
-                  className={cn(
-                    "flex items-center gap-3 p-4 border rounded-xl cursor-pointer",
-                    paymentMethod === "stripe" ? "border-black" : "border-black/10"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="stripe"
-                    checked={paymentMethod === "stripe"}
-                    onChange={() => setPaymentMethod("stripe")}
-                  />
-                  <div>
-                    <div className="font-medium">{t("checkout.paymentCard")}</div>
-                    <div className="text-sm text-black/50">{t("checkout.paymentCardDesc")}</div>
-                  </div>
-                </label>
-                {paymentMethod === "stripe" && (
-                  <div className="p-4 border border-black/10 rounded-xl text-sm text-black/60">
-                    {t("checkout.stripeRedirectNote")}
-                  </div>
-                )}
+                <div className="p-4 border border-black/10 rounded-xl">
+                  <div className="font-medium">{t("checkout.paymentCard")}</div>
+                  <div className="text-sm text-black/50">{t("checkout.paymentCardDesc")}</div>
+                </div>
+                <div className="p-4 border border-black/10 rounded-xl text-sm text-black/60">
+                  {t("checkout.stripeRedirectNote")}
+                </div>
                 {submitError && <div className="text-sm text-red-500">{submitError}</div>}
               </div>
             )}
@@ -612,6 +643,12 @@ export default function CheckoutPage() {
                   {selectedOffer ? formatPrice(shippingFee) : t("checkout.shippingPending")}
                 </span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-black/60">{t("cart.discount")}</span>
+                  <span className="font-medium text-red-600">-{formatPrice(discountAmount)}</span>
+                </div>
+              )}
               <hr className="border-t-black/10 my-2" />
               <div className="flex justify-between font-bold text-base">
                 <span>{t("cart.total")}</span>
