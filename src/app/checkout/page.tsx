@@ -74,6 +74,7 @@ export default function CheckoutPage() {
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [card, setCard] = useState({
     number: "4242 4242 4242 4242",
@@ -87,10 +88,10 @@ export default function CheckoutPage() {
   const phonePrefix = PHONE_PREFIX[customer.country];
 
   useEffect(() => {
-    if (rehydrated && items.length === 0 && !submitting) {
+    if (rehydrated && items.length === 0 && !submitting && !orderPlaced) {
       router.replace("/cart/");
     }
-  }, [rehydrated, items.length, submitting, router]);
+  }, [rehydrated, items.length, submitting, orderPlaced, router]);
 
   const subtotal = useMemo(
     () =>
@@ -224,8 +225,9 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Order failed");
+      setOrderPlaced(true);
       dispatch(clearCart());
-      router.push(`/checkout/success?orderId=${data.orderId}`);
+      router.push(`/checkout/success/?orderId=${data.orderId}`);
     } catch (e: any) {
       setSubmitError(e?.message || t("checkout.orderFailed"));
     } finally {
