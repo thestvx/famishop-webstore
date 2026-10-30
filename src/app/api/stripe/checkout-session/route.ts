@@ -23,29 +23,61 @@ async function resolveShippingBase(input: {
   country: string;
   postalCode: string;
   city: string;
-  items: IncomingItem[];
+  items: any[];
   selected?: { operator?: string; service?: string; price?: number };
 }): Promise<number> {
-  const fallback = Math.max(0, Math.min(500, Number(input.selected?.price) || 0));
   const access = process.env.BOXTAL_ACCESS_KEY;
   const secret = process.env.BOXTAL_SECRET_KEY;
-  if (!access || !secret) return fallback;
-  if (input.country !== "FR" && input.country !== "IT") return fallback;
-  if (!input.postalCode || !input.city) return fallback;
+  if (!access || !secret) throw new Error("Shipping is not configured");
+  if (input.country !== "FR" && input.country !== "IT") throw new Error("Shipping is only available to France and Italy");
+  if (!input.postalCode || !input.city) throw new Error("Postal code and city are required");
+
+  const SIZE_MAP: Record<string, { weight: number; length: number; width: number; height: number }> = {
+    small: { weight: 0.3, length: 20, width: 15, height: 5 },
+    medium: { weight: 0.8, length: 30, width: 20, height: 10 },
+    large: { weight: 1.5, length: 40, width: 30, height: 20 },
+  };
   try {
-    const itemWeight = Number(process.env.BOXTAL_DEFAULT_ITEM_WEIGHT_KG || 0.5);
-    const quantity = input.items.reduce(
-      (sum, item) => sum + Math.max(1, Math.round(Number(item.quantity) || 1)),
-      0
-    );
-    const weight = Math.max(1, Math.round(quantity * itemWeight * 10) / 10);
+    let weight = 0;
+    let length = 0;
+    let width = 0;
+    let height = 0;
+    for (const item of input.items) {
+      const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
+      const wg = item.weightGrams ?? item.weight_grams;
+      const wkg = item.weightKg ?? item.weight_kg;
+      const weightKg = wkg != null && Number(wkg) > 0 ? Number(wkg) : wg != null && Number(wg) > 0 ? Number(wg) / 1000 : 0;
+      let s: { weight: number; length: number; width: number; height: number };
+      if (weightKg > 0) {
+        const l = Number(item.lengthCm ?? item.length_cm) > 0 ? Number(item.lengthCm ?? item.length_cm) : 0;
+        const wd = Number(item.widthCm ?? item.width_cm) > 0 ? Number(item.widthCm ?? item.width_cm) : 0;
+        const h = Number(item.heightCm ?? item.height_cm) > 0 ? Number(item.heightCm ?? item.height_cm) : 0;
+        const key = String(item.packageSize ?? item.package_size ?? "").toLowerCase();
+        const fallback = SIZE_MAP[key] || SIZE_MAP.medium;
+        s = { weight: weightKg, length: l || fallback.length, width: wd || fallback.width, height: h || fallback.height };
+      } else {
+        const key = String(item.packageSize ?? item.package_size ?? "").toLowerCase();
+        s = SIZE_MAP[key] || SIZE_MAP.medium;
+      }
+      weight += s.weight * qty;
+      length = Math.max(length, s.length);
+      width = Math.max(width, s.width);
+      height = Math.max(height, s.height);
+    }
+    const packaging = Number(process.env.BOXTAL_PACKAGING_WEIGHT_KG || 0);
+    weight = weight + (Number.isFinite(packaging) ? packaging : 0);
+    weight = Math.max(0.1, Math.round(weight * 1000) / 1000);
+    length = length || 30;
+    width = width || 20;
+    height = height || 10;
+
     const now = new Date();
     const pad = (value: number) => String(value).padStart(2, "0");
     const params = new URLSearchParams({
       "colis_1.poids": String(weight),
-      "colis_1.longueur": "30",
-      "colis_1.largeur": "20",
-      "colis_1.hauteur": "10",
+      "colis_1.longueur": String(length),
+      "colis_1.largeur": String(width),
+      "colis_1.hauteur": String(height),
       code_contenu: process.env.BOXTAL_CONTENT_CODE || "40110",
       "expediteur.pays": process.env.BOXTAL_SHIPPER_COUNTRY || "FR",
       "expediteur.code_postal": process.env.BOXTAL_SHIPPER_POSTAL_CODE || "75001",
@@ -62,9 +94,9 @@ async function resolveShippingBase(input: {
       headers: { Authorization: `Basic ${auth}`, Accept: "application/xml" },
       cache: "no-store",
     });
-    if (!res.ok) return fallback;
+    if (!res.ok) throw new Error(`Boxtal quote failed (${res.status})`);
     const xml = await res.text();
-    const offers = Array.from(xml.matchAll(/<offer>([\s\S]*?)<\/offer>/g)).map((match) => {
+    const offers = Array.from(xml.matchAll(/<offer>([\\s\\S]*?)<\/offer>/g)).map((match) => {
       const block = match[1];
       const operatorBlock = xmlTag(block, "operator");
       const serviceBlock = xmlTag(block, "service");
@@ -79,14 +111,14 @@ async function resolveShippingBase(input: {
     });
     const home = offers.filter((o) => o.deliveryType === "HOME" && o.price > 0);
     const pool = home.length ? home : offers.filter((o) => o.price > 0);
-    if (pool.length === 0) return fallback;
+    if (pool.length === 0) throw new Error("No shipping options are available");
     const selected = pool.find(
       (o) => o.operator === input.selected?.operator && o.service === input.selected?.service
     );
     const chosen = selected || pool.sort((a, b) => a.price - b.price)[0];
     return round(chosen.price);
-  } catch {
-    return fallback;
+  } catch (e) {
+    throw e instanceof Error ? e : new Error("Shipping quote failed");
   }
 }
 
@@ -218,17 +250,35 @@ export async function POST(req: Request) {
 
   const subtotal = round(subtotalBase * rate);
   const shippingSelection = body?.shipping || {};
-  const shippingBase = await resolveShippingBase({
-    country,
-    postalCode: String(customer.postalCode || "").trim(),
-    city,
-    items: incomingItems,
-    selected: {
-      operator: shippingSelection.operator,
-      service: shippingSelection.service,
-      price: shippingSelection.price,
-    },
+  const shippingItems = incomingItems.map((inc) => {
+    const product: any = productMap.get(Number(inc.id));
+    return {
+      ...inc,
+      packageSize: product?.package_size || (product as any)?.packageSize || null,
+      weightGrams: product?.weight_grams || (product as any)?.weightGrams || null,
+      weightKg: product?.weight_kg || (product as any)?.weightKg || null,
+      weight_kg: product?.weight_kg || (product as any)?.weight_kg || null,
+      lengthCm: product?.length_cm || (product as any)?.lengthCm || null,
+      widthCm: product?.width_cm || (product as any)?.widthCm || null,
+      heightCm: product?.height_cm || (product as any)?.heightCm || null,
+    };
   });
+  let shippingBase: number;
+  try {
+    shippingBase = await resolveShippingBase({
+      country,
+      postalCode: String(customer.postalCode || "").trim(),
+      city,
+      items: shippingItems,
+      selected: {
+        operator: shippingSelection.operator,
+        service: shippingSelection.service,
+        price: shippingSelection.price,
+      },
+    });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || "Shipping quote failed" }, { status: 502 });
+  }
   const shippingFee = round(shippingBase * rate);
   const tax = 0;
   const total = round(subtotal - 0 + shippingFee + tax);

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 type IncomingItem = {
   id: number | string;
   quantity: number;
   packageSize?: string | null;
   weightGrams?: number | null;
+  weightKg?: number | null;
+  weight_kg?: number | null;
   lengthCm?: number | null;
   widthCm?: number | null;
   heightCm?: number | null;
@@ -28,7 +31,7 @@ const CONTENT_CODE = process.env.BOXTAL_CONTENT_CODE || "40110";
 const SHIPPER_COUNTRY = process.env.BOXTAL_SHIPPER_COUNTRY || "FR";
 const SHIPPER_POSTAL = process.env.BOXTAL_SHIPPER_POSTAL_CODE || "75001";
 const SHIPPER_CITY = process.env.BOXTAL_SHIPPER_CITY || "Paris";
-const ITEM_WEIGHT = Number(process.env.BOXTAL_DEFAULT_ITEM_WEIGHT_KG || 0.5);
+const PACKAGING_WEIGHT_KG = Number(process.env.BOXTAL_PACKAGING_WEIGHT_KG || 0);
 
 function credentials() {
   const access = process.env.BOXTAL_ACCESS_KEY;
@@ -43,17 +46,22 @@ const SIZE_MAP: Record<string, { weight: number; length: number; width: number; 
   large: { weight: 1.5, length: 40, width: 30, height: 20 },
 };
 
+function itemWeightKg(item: IncomingItem): number {
+  if (item.weightKg != null && Number(item.weightKg) > 0) return Number(item.weightKg);
+  if (item.weight_kg != null && Number(item.weight_kg) > 0) return Number(item.weight_kg);
+  if (item.weightGrams != null && Number(item.weightGrams) > 0) return Number(item.weightGrams) / 1000;
+  return 0;
+}
+
 function sizeFor(item: IncomingItem) {
-  // Prefer explicit weight/dims from product data
-  if (item.weightGrams != null && item.weightGrams > 0) {
-    const w = item.weightGrams / 1000;
+  const w = itemWeightKg(item);
+  if (w > 0) {
     const l = item.lengthCm && item.lengthCm > 0 ? item.lengthCm : 0;
     const wd = item.widthCm && item.widthCm > 0 ? item.widthCm : 0;
     const h = item.heightCm && item.heightCm > 0 ? item.heightCm : 0;
     if (l && wd && h) {
       return { weight: w, length: l, width: wd, height: h };
     }
-    // weight known but no dims: use package_size dims or medium
     const key = String(item.packageSize || "").toLowerCase();
     const s = SIZE_MAP[key] || SIZE_MAP.medium;
     return { weight: w, length: s.length, width: s.width, height: s.height };
@@ -79,8 +87,8 @@ function packageForItems(items: IncomingItem[]) {
     width = Math.max(width, s.width);
     height = Math.max(height, s.height);
   }
-  weight = Math.max(0.1, Math.round(weight * 10) / 10);
-  if (weight < 1) weight = 1; // Boxtal minimum 1 kg
+  weight = weight + (Number.isFinite(PACKAGING_WEIGHT_KG) ? PACKAGING_WEIGHT_KG : 0);
+  weight = Math.max(0.1, Math.round(weight * 1000) / 1000);
   length = length || 30;
   width = width || 20;
   height = height || 10;
@@ -182,7 +190,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   }
 
-  const pkg = packageForItems(incomingItems);
+  // Resolve trusted product data from the database instead of trusting browser weights.
+  const trustedItems: IncomingItem[] = [...incomingItems];
+  if (isSupabaseConfigured() && supabase) {
+    const ids = incomingItems.map((i) => Number(i.id)).filter((n) => Number.isFinite(n));
+    if (ids.length) {
+      const { data } = await supabase.from("products").select("*").in("id", ids);
+      const map = new Map((data || []).map((p: any) => [Number(p.id), p]));
+      for (let i = 0; i < trustedItems.length; i += 1) {
+        const item = trustedItems[i];
+        const product: any = map.get(Number(item.id));
+        if (!product) continue;
+        trustedItems[i] = {
+          ...item,
+          packageSize: product.package_size || item.packageSize || null,
+          weightGrams: product.weight_grams != null ? Number(product.weight_grams) : item.weightGrams,
+          weightKg: product.weight_kg != null ? Number(product.weight_kg) : item.weightKg,
+          weight_kg: product.weight_kg != null ? Number(product.weight_kg) : item.weight_kg,
+          lengthCm: product.length_cm != null ? Number(product.length_cm) : item.lengthCm,
+          widthCm: product.width_cm != null ? Number(product.width_cm) : item.widthCm,
+          heightCm: product.height_cm != null ? Number(product.height_cm) : item.heightCm,
+        };
+      }
+    }
+  }
+
+  const pkg = packageForItems(trustedItems);
   const params = new URLSearchParams({
     "colis_1.poids": String(pkg.weight),
     "colis_1.longueur": String(pkg.length),

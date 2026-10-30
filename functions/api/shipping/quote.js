@@ -30,11 +30,47 @@ export async function onRequestPost(context) {
   }
   if (incomingItems.length === 0) return json({ error: "Cart is empty" }, 400);
 
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL || "https://lahorqznlrzdlupveoja.supabase.co";
+  const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhaG9ycXpubHJ6ZGx1cHZlb2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjQzNjgsImV4cCI6MjEwODcwMDM2OH0.5qGE1B8hQUxW113xKEI6oW9NoIraAkmacMFbb1kCRws";
+  const trustedItems = [...incomingItems];
+  try {
+    const ids = incomingItems.map((i) => Number(i.id)).filter((n) => Number.isFinite(n));
+    if (ids.length) {
+      const prodRes = await fetch(`${supabaseUrl}/rest/v1/products?select=*&id=in.(${ids.join(",")})`, {
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+      });
+      if (prodRes.ok) {
+        const products = await prodRes.json();
+        const map = new Map((products || []).map((p) => [Number(p.id), p]));
+        for (let i = 0; i < trustedItems.length; i += 1) {
+          const item = trustedItems[i];
+          const product = map.get(Number(item.id));
+          if (!product) continue;
+          trustedItems[i] = {
+            ...item,
+            packageSize: product.package_size || item.packageSize || null,
+            package_size: product.package_size || item.package_size || null,
+            weightGrams: product.weight_grams != null ? Number(product.weight_grams) : item.weightGrams,
+            weight_grams: product.weight_grams != null ? Number(product.weight_grams) : item.weight_grams,
+            weightKg: product.weight_kg != null ? Number(product.weight_kg) : item.weightKg,
+            weight_kg: product.weight_kg != null ? Number(product.weight_kg) : item.weight_kg,
+            lengthCm: product.length_cm != null ? Number(product.length_cm) : item.lengthCm,
+            length_cm: product.length_cm != null ? Number(product.length_cm) : item.length_cm,
+            widthCm: product.width_cm != null ? Number(product.width_cm) : item.widthCm,
+            width_cm: product.width_cm != null ? Number(product.width_cm) : item.width_cm,
+            heightCm: product.height_cm != null ? Number(product.height_cm) : item.heightCm,
+            height_cm: product.height_cm != null ? Number(product.height_cm) : item.height_cm,
+          };
+        }
+      }
+    }
+  } catch {}
+
   const contentCode = env.BOXTAL_CONTENT_CODE || "40110";
   const shipperCountry = env.BOXTAL_SHIPPER_COUNTRY || "FR";
   const shipperPostal = env.BOXTAL_SHIPPER_POSTAL_CODE || "75001";
   const shipperCity = env.BOXTAL_SHIPPER_CITY || "Paris";
-  const pkg = packageForItems(incomingItems);
+  const pkg = packageForItems(trustedItems, env);
   const params = new URLSearchParams({
     "colis_1.poids": String(pkg.weight),
     "colis_1.longueur": String(pkg.length),
@@ -98,22 +134,30 @@ const SIZE_MAP = {
   large: { weight: 1.5, length: 40, width: 30, height: 20 },
 };
 
+function itemWeightKg(item) {
+  if (item.weightKg != null && Number(item.weightKg) > 0) return Number(item.weightKg);
+  if (item.weight_kg != null && Number(item.weight_kg) > 0) return Number(item.weight_kg);
+  if (item.weightGrams != null && Number(item.weightGrams) > 0) return Number(item.weightGrams) / 1000;
+  if (item.weight_grams != null && Number(item.weight_grams) > 0) return Number(item.weight_grams) / 1000;
+  return 0;
+}
+
 function sizeFor(item) {
-  if (item.weightGrams != null && Number(item.weightGrams) > 0) {
-    const w = Number(item.weightGrams) / 1000;
-    const l = Number(item.lengthCm) > 0 ? Number(item.lengthCm) : 0;
-    const wd = Number(item.widthCm) > 0 ? Number(item.widthCm) : 0;
-    const h = Number(item.heightCm) > 0 ? Number(item.heightCm) : 0;
+  const w = itemWeightKg(item);
+  if (w > 0) {
+    const l = Number(item.lengthCm || item.length_cm) > 0 ? Number(item.lengthCm || item.length_cm) : 0;
+    const wd = Number(item.widthCm || item.width_cm) > 0 ? Number(item.widthCm || item.width_cm) : 0;
+    const h = Number(item.heightCm || item.height_cm) > 0 ? Number(item.heightCm || item.height_cm) : 0;
     if (l && wd && h) return { weight: w, length: l, width: wd, height: h };
-    const key = String(item.packageSize || "").toLowerCase();
+    const key = String(item.packageSize || item.package_size || "").toLowerCase();
     const s = SIZE_MAP[key] || SIZE_MAP.medium;
     return { weight: w, length: s.length, width: s.width, height: s.height };
   }
-  const key = String(item.packageSize || "").toLowerCase();
+  const key = String(item.packageSize || item.package_size || "").toLowerCase();
   return SIZE_MAP[key] || SIZE_MAP.medium;
 }
 
-function packageForItems(items) {
+function packageForItems(items, env) {
   const quantity = items.reduce(
     (sum, item) => sum + Math.max(1, Math.round(Number(item.quantity) || 1)),
     0
@@ -130,8 +174,9 @@ function packageForItems(items) {
     width = Math.max(width, s.width);
     height = Math.max(height, s.height);
   }
-  weight = Math.max(0.1, Math.round(weight * 10) / 10);
-  if (weight < 1) weight = 1;
+  const packaging = Number((env && env.BOXTAL_PACKAGING_WEIGHT_KG) || 0);
+  weight = weight + (Number.isFinite(packaging) ? packaging : 0);
+  weight = Math.max(0.1, Math.round(weight * 1000) / 1000);
   length = length || 30;
   width = width || 20;
   height = height || 10;

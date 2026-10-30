@@ -98,7 +98,22 @@ function normalizeProduct(row: AnyRecord): Product | null {
     colors: toStringArray(row.colors),
     materials: toStringArray(row.materials),
     packageSize: typeof row.package_size === "string" && row.package_size.trim() ? row.package_size : null,
-    weightGrams: row.weight_grams != null ? Number(row.weight_grams) : null,
+    weightGrams:
+      row.weight_grams != null
+        ? Number(row.weight_grams)
+        : row.weight_kg != null
+        ? Math.round(Number(row.weight_kg) * 1000)
+        : row.weightKg != null
+        ? Math.round(Number(row.weightKg) * 1000)
+        : null,
+    weightKg:
+      row.weight_kg != null
+        ? Number(row.weight_kg)
+        : row.weight_grams != null
+        ? Number(row.weight_grams) / 1000
+        : row.weightKg != null
+        ? Number(row.weightKg)
+        : null,
     lengthCm: row.length_cm != null ? Number(row.length_cm) : null,
     widthCm: row.width_cm != null ? Number(row.width_cm) : null,
     heightCm: row.height_cm != null ? Number(row.height_cm) : null,

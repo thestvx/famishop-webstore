@@ -33,6 +33,7 @@ export type CartItem = {
   stock?: number | null;
   packageSize?: string | null;
   weightGrams?: number | null;
+  weightKg?: number | null;
   lengthCm?: number | null;
   widthCm?: number | null;
   heightCm?: number | null;

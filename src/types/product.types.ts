@@ -29,6 +29,7 @@ export type Product = {
   materials?: string[];
   packageSize?: string | null;
   weightGrams?: number | null;
+  weightKg?: number | null;
   lengthCm?: number | null;
   widthCm?: number | null;
   heightCm?: number | null;

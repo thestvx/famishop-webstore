@@ -87,11 +87,31 @@ export async function onRequestPost(context) {
   const subtotal = round(subtotalBase * rate);
   const discount = body?.discount || null;
   const shippingSelection = body?.shipping || {};
-    const shippingBase = await resolveShippingBase({
+  const shippingItems = incomingItems.map((inc) => {
+    const product = productMap.get(Number(inc.id));
+    return {
+      ...inc,
+      packageSize: (product && (product.package_size || product.packageSize)) || null,
+      package_size: (product && (product.package_size || product.packageSize)) || null,
+      weightGrams: (product && (product.weight_grams || product.weightGrams)) || null,
+      weight_grams: (product && (product.weight_grams || product.weightGrams)) || null,
+      weightKg: (product && (product.weight_kg || product.weightKg)) || null,
+      weight_kg: (product && (product.weight_kg || product.weightKg)) || null,
+      lengthCm: (product && (product.length_cm || product.lengthCm)) || null,
+      length_cm: (product && (product.length_cm || product.lengthCm)) || null,
+      widthCm: (product && (product.width_cm || product.widthCm)) || null,
+      width_cm: (product && (product.width_cm || product.widthCm)) || null,
+      heightCm: (product && (product.height_cm || product.heightCm)) || null,
+      height_cm: (product && (product.height_cm || product.heightCm)) || null,
+    };
+  });
+  let shippingBase;
+  try {
+    shippingBase = await resolveShippingBase({
       country,
       postalCode: String(customer.postalCode || "").trim(),
       city,
-      items: incomingItems,
+      items: shippingItems,
       selected: {
         operator: shippingSelection.operator,
         service: shippingSelection.service,
@@ -99,6 +119,9 @@ export async function onRequestPost(context) {
       },
       env,
     });
+  } catch (e) {
+    return json({ error: e?.message || "Shipping quote failed" }, 502);
+  }
     const shippingFee = round(shippingBase * rate);
     const tax = 0;
     const total = round(subtotal + shippingFee + tax);
@@ -308,26 +331,56 @@ async function getRate(currency, env) {
 }
 
 async function resolveShippingBase(input) {
-  const fallback = Math.max(0, Math.min(500, Number(input.selected?.price) || 0));
   const access = input.env.BOXTAL_ACCESS_KEY;
   const secret = input.env.BOXTAL_SECRET_KEY;
-  if (!access || !secret) return fallback;
-  if (input.country !== "FR" && input.country !== "IT") return fallback;
-  if (!input.postalCode || !input.city) return fallback;
+  if (!access || !secret) throw new Error("Shipping is not configured");
+  if (input.country !== "FR" && input.country !== "IT") throw new Error("Shipping is only available to France and Italy");
+  if (!input.postalCode || !input.city) throw new Error("Postal code and city are required");
+  const SIZE_MAP = {
+    small: { weight: 0.3, length: 20, width: 15, height: 5 },
+    medium: { weight: 0.8, length: 30, width: 20, height: 10 },
+    large: { weight: 1.5, length: 40, width: 30, height: 20 },
+  };
   try {
-    const itemWeight = Number(input.env.BOXTAL_DEFAULT_ITEM_WEIGHT_KG || 0.5);
-    const quantity = input.items.reduce(
-      (sum, item) => sum + Math.max(1, Math.round(Number(item.quantity) || 1)),
-      0
-    );
-    const weight = Math.max(1, Math.round(quantity * itemWeight * 10) / 10);
+    let weight = 0;
+    let length = 0;
+    let width = 0;
+    let height = 0;
+    for (const item of input.items) {
+      const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
+      const wg = item.weightGrams || item.weight_grams;
+      const wkg = item.weightKg || item.weight_kg;
+      const weightKg = wkg != null && Number(wkg) > 0 ? Number(wkg) : wg != null && Number(wg) > 0 ? Number(wg) / 1000 : 0;
+      let s;
+      if (weightKg > 0) {
+        const l = Number(item.lengthCm || item.length_cm) > 0 ? Number(item.lengthCm || item.length_cm) : 0;
+        const wd = Number(item.widthCm || item.width_cm) > 0 ? Number(item.widthCm || item.width_cm) : 0;
+        const h = Number(item.heightCm || item.height_cm) > 0 ? Number(item.heightCm || item.height_cm) : 0;
+        const key = String((item && (item.packageSize || item.package_size)) || "").toLowerCase();
+        const fallback = SIZE_MAP[key] || SIZE_MAP.medium;
+        s = { weight: weightKg, length: l || fallback.length, width: wd || fallback.width, height: h || fallback.height };
+      } else {
+        const key = String((item && (item.packageSize || item.package_size)) || "").toLowerCase();
+        s = SIZE_MAP[key] || SIZE_MAP.medium;
+      }
+      weight += s.weight * qty;
+      length = Math.max(length, s.length);
+      width = Math.max(width, s.width);
+      height = Math.max(height, s.height);
+    }
+    const packaging = Number(input.env.BOXTAL_PACKAGING_WEIGHT_KG || 0);
+    weight = weight + (Number.isFinite(packaging) ? packaging : 0);
+    weight = Math.max(0.1, Math.round(weight * 1000) / 1000);
+    length = length || 30;
+    width = width || 20;
+    height = height || 10;
     const now = new Date();
     const pad = (value) => String(value).padStart(2, "0");
     const params = new URLSearchParams({
       "colis_1.poids": String(weight),
-      "colis_1.longueur": "30",
-      "colis_1.largeur": "20",
-      "colis_1.hauteur": "10",
+      "colis_1.longueur": String(length),
+      "colis_1.largeur": String(width),
+      "colis_1.hauteur": String(height),
       code_contenu: input.env.BOXTAL_CONTENT_CODE || "40110",
       "expediteur.pays": input.env.BOXTAL_SHIPPER_COUNTRY || "FR",
       "expediteur.code_postal": input.env.BOXTAL_SHIPPER_POSTAL_CODE || "75001",
@@ -343,7 +396,7 @@ async function resolveShippingBase(input) {
     const res = await fetch(`${BOXTAL_BASE}/cotation?${params.toString()}`, {
       headers: { Authorization: `Basic ${auth}`, Accept: "application/xml" },
     });
-    if (!res.ok) return fallback;
+    if (!res.ok) throw new Error(`Boxtal quote failed (${res.status})`);
     const xml = await res.text();
     const offers = [...xml.matchAll(/<offer>([\s\S]*?)<\/offer>/g)].map((match) => {
       const block = match[1];
@@ -360,14 +413,14 @@ async function resolveShippingBase(input) {
     });
     const home = offers.filter((o) => o.deliveryType === "HOME" && o.price > 0);
     const pool = home.length ? home : offers.filter((o) => o.price > 0);
-    if (pool.length === 0) return fallback;
+    if (pool.length === 0) throw new Error("No shipping options are available");
     const selected = pool.find(
       (o) => o.operator === input.selected?.operator && o.service === input.selected?.service
     );
     const chosen = selected || pool.sort((a, b) => a.price - b.price)[0];
     return round(chosen.price);
-  } catch {
-    return fallback;
+  } catch (e) {
+    throw e instanceof Error ? e : new Error("Shipping quote failed");
   }
 }
 

@@ -230,6 +230,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const price = priceEur || priceUsd || priceDzd;
   const [packageSize, setPackageSize] = useState("");
   const [stock, setStock] = useState("");
+  const [weightKg, setWeightKg] = useState("");
 
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -303,6 +304,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           setMaterials(Array.isArray(data.materials) ? data.materials : []);
           setPackageSize(data.package_size || "");
           setStock(data.stock != null ? String(data.stock) : "");
+          if (data.weight_kg != null) setWeightKg(String(data.weight_kg));
+          else if (data.weight_grams != null) setWeightKg(String(Number(data.weight_grams) / 1000));
+          else if (data.weightKg != null) setWeightKg(String(data.weightKg));
+          else setWeightKg("");
           setCategoryId(data.category || null);
           if (data.category_path) setCategoryPathNames(String(data.category_path).split(" > "));
           else if (data.category) {
@@ -497,6 +502,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     if (!title.trim()) return t("addProduct.titleRequired");
     const p = Number(price);
     if (!price || isNaN(p) || p <= 0) return t("addProduct.priceInvalid");
+    if (weightKg.trim()) {
+      const w = Number(weightKg);
+      if (!Number.isFinite(w) || w <= 0) return t("addProduct.weightInvalid");
+    }
     const doneImages = images.filter((i) => i.status === "done");
     // images optional
     if (images.some((i) => i.status === "uploading")) return t("addProduct.uploadInProgress");
@@ -579,6 +588,9 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         materials,
         package_size: packageSize || null,
         stock: stock ? Number(stock) : null,
+        weight_grams: weightKg.trim() ? Math.round(Number(weightKg) * 1000) : null,
+        weight_kg: weightKg.trim() ? Number(weightKg) : null,
+        weightKg: weightKg.trim() ? Number(weightKg) : null,
         public_ids: ids,
       };
 
@@ -1172,6 +1184,25 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             const next = window.prompt(t("addProduct.stock"), stock);
             if (next !== null) { setStock(next.trim()); markDirty(); }
           }} />
+        </section>
+
+        <section className="mb-6 bg-white rounded-2xl border border-black/10 p-4">
+          <h2 className="text-sm font-semibold text-black/70 mb-3">{t("addProduct.productWeight")}</h2>
+          <label className="text-sm text-black/70 block mb-1">{t("addProduct.productWeight")} (kg)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.001"
+            min="0"
+            value={weightKg}
+            onChange={(e) => {
+              setWeightKg(e.target.value);
+              markDirty();
+            }}
+            placeholder="0.250 = 250 g"
+            className="w-full px-3 py-2 rounded-lg border border-black/10"
+          />
+          <p className="text-xs text-black/50 mt-2">0.250 = 250 g. {t("addProduct.productWeightHint")}</p>
         </section>
 
         {msg && <p className="text-sm text-black/70 mb-4">{msg}</p>}

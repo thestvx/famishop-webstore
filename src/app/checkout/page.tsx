@@ -153,6 +153,13 @@ export default function CheckoutPage() {
   const phonePrefix = PHONE_PREFIX[customer.country];
 
   useEffect(() => {
+    if (step === 2 && customer.postalCode && customer.city) {
+      void loadShipping(customer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  useEffect(() => {
     if (rehydrated && items.length === 0 && !submitting && !orderPlaced) {
       router.replace("/cart/");
     }
@@ -193,6 +200,7 @@ export default function CheckoutPage() {
               quantity: item.quantity,
               packageSize: (item as any).packageSize || null,
               weightGrams: (item as any).weightGrams || null,
+              weightKg: (item as any).weightKg || null,
               lengthCm: (item as any).lengthCm || null,
               widthCm: (item as any).widthCm || null,
               heightCm: (item as any).heightCm || null,
