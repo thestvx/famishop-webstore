@@ -99,6 +99,16 @@ const SIZE_MAP = {
 };
 
 function sizeFor(item) {
+  if (item.weightGrams != null && Number(item.weightGrams) > 0) {
+    const w = Number(item.weightGrams) / 1000;
+    const l = Number(item.lengthCm) > 0 ? Number(item.lengthCm) : 0;
+    const wd = Number(item.widthCm) > 0 ? Number(item.widthCm) : 0;
+    const h = Number(item.heightCm) > 0 ? Number(item.heightCm) : 0;
+    if (l && wd && h) return { weight: w, length: l, width: wd, height: h };
+    const key = String(item.packageSize || "").toLowerCase();
+    const s = SIZE_MAP[key] || SIZE_MAP.medium;
+    return { weight: w, length: s.length, width: s.width, height: s.height };
+  }
   const key = String(item.packageSize || "").toLowerCase();
   return SIZE_MAP[key] || SIZE_MAP.medium;
 }

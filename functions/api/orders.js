@@ -222,8 +222,20 @@ async function resolveShippingBase(input) {
     );
     for (const item of input.items) {
       const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
-      const key = String((item && (item.packageSize || item.package_size)) || "").toLowerCase();
-      const s = SIZE_MAP[key] || SIZE_MAP.medium;
+      const wg = item.weightGrams || item.weight_grams;
+      let s;
+      if (wg != null && Number(wg) > 0) {
+        const w = Number(wg) / 1000;
+        const l = Number(item.lengthCm || item.length_cm) > 0 ? Number(item.lengthCm || item.length_cm) : 0;
+        const wd = Number(item.widthCm || item.width_cm) > 0 ? Number(item.widthCm || item.width_cm) : 0;
+        const h = Number(item.heightCm || item.height_cm) > 0 ? Number(item.heightCm || item.height_cm) : 0;
+        const key = String((item && (item.packageSize || item.package_size)) || "").toLowerCase();
+        const fallback = SIZE_MAP[key] || SIZE_MAP.medium;
+        s = { weight: w, length: l || fallback.length, width: wd || fallback.width, height: h || fallback.height };
+      } else {
+        const key = String((item && (item.packageSize || item.package_size)) || "").toLowerCase();
+        s = SIZE_MAP[key] || SIZE_MAP.medium;
+      }
       weight += s.weight * qty;
       length = Math.max(length, s.length);
       width = Math.max(width, s.width);

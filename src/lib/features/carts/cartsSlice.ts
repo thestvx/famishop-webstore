@@ -32,6 +32,10 @@ export type CartItem = {
   quantity: number;
   stock?: number | null;
   packageSize?: string | null;
+  weightGrams?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
 };
 
 export type Cart = {

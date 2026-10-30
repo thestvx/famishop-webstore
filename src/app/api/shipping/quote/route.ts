@@ -4,6 +4,10 @@ type IncomingItem = {
   id: number | string;
   quantity: number;
   packageSize?: string | null;
+  weightGrams?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
 };
 
 type QuoteOffer = {
@@ -40,6 +44,20 @@ const SIZE_MAP: Record<string, { weight: number; length: number; width: number; 
 };
 
 function sizeFor(item: IncomingItem) {
+  // Prefer explicit weight/dims from product data
+  if (item.weightGrams != null && item.weightGrams > 0) {
+    const w = item.weightGrams / 1000;
+    const l = item.lengthCm && item.lengthCm > 0 ? item.lengthCm : 0;
+    const wd = item.widthCm && item.widthCm > 0 ? item.widthCm : 0;
+    const h = item.heightCm && item.heightCm > 0 ? item.heightCm : 0;
+    if (l && wd && h) {
+      return { weight: w, length: l, width: wd, height: h };
+    }
+    // weight known but no dims: use package_size dims or medium
+    const key = String(item.packageSize || "").toLowerCase();
+    const s = SIZE_MAP[key] || SIZE_MAP.medium;
+    return { weight: w, length: s.length, width: s.width, height: s.height };
+  }
   const key = String(item.packageSize || "").toLowerCase();
   return SIZE_MAP[key] || SIZE_MAP.medium;
 }

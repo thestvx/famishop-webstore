@@ -49,8 +49,20 @@ async function resolveShippingBase(input: {
     );
     for (const item of input.items) {
       const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
-      const key = String((item as any).packageSize || "").toLowerCase();
-      const s = SIZE_MAP[key] || SIZE_MAP.medium;
+      const wg = (item as any).weightGrams;
+      let s: { weight: number; length: number; width: number; height: number };
+      if (wg != null && Number(wg) > 0) {
+        const w = Number(wg) / 1000;
+        const l = Number((item as any).lengthCm) > 0 ? Number((item as any).lengthCm) : 0;
+        const wd = Number((item as any).widthCm) > 0 ? Number((item as any).widthCm) : 0;
+        const h = Number((item as any).heightCm) > 0 ? Number((item as any).heightCm) : 0;
+        const key = String((item as any).packageSize || "").toLowerCase();
+        const fallback = SIZE_MAP[key] || SIZE_MAP.medium;
+        s = { weight: w, length: l || fallback.length, width: wd || fallback.width, height: h || fallback.height };
+      } else {
+        const key = String((item as any).packageSize || "").toLowerCase();
+        s = SIZE_MAP[key] || SIZE_MAP.medium;
+      }
       weight += s.weight * qty;
       length = Math.max(length, s.length);
       width = Math.max(width, s.width);
@@ -239,6 +251,10 @@ export async function POST(req: Request) {
     return {
       ...inc,
       packageSize: product?.package_size || (product as any)?.packageSize || null,
+      weightGrams: product?.weight_grams || (product as any)?.weightGrams || null,
+      lengthCm: product?.length_cm || (product as any)?.lengthCm || null,
+      widthCm: product?.width_cm || (product as any)?.widthCm || null,
+      heightCm: product?.height_cm || (product as any)?.heightCm || null,
     };
   });
   const shippingBase = await resolveShippingBase({

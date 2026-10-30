@@ -32,6 +32,10 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
         stock: data.stock,
         quantity: data.quantity,
         packageSize: (data as any).packageSize || (data as any).package_size || null,
+        weightGrams: (data as any).weightGrams || (data as any).weight_grams || null,
+        lengthCm: (data as any).lengthCm || (data as any).length_cm || null,
+        widthCm: (data as any).widthCm || (data as any).width_cm || null,
+        heightCm: (data as any).heightCm || (data as any).height_cm || null,
       })
     );
     window.setTimeout(() => setAnimating(false), 650);

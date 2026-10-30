@@ -188,7 +188,15 @@ export default function CheckoutPage() {
             country: target.country,
             postalCode: target.postalCode.trim(),
             city: target.city.trim(),
-            items: items.map((item) => ({ id: item.id, quantity: item.quantity, packageSize: (item as any).packageSize || null })),
+            items: items.map((item) => ({
+              id: item.id,
+              quantity: item.quantity,
+              packageSize: (item as any).packageSize || null,
+              weightGrams: (item as any).weightGrams || null,
+              lengthCm: (item as any).lengthCm || null,
+              widthCm: (item as any).widthCm || null,
+              heightCm: (item as any).heightCm || null,
+            })),
           }),
         });
         const data = await res.json();

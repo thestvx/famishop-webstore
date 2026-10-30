@@ -28,6 +28,11 @@ export type Product = {
   colors?: string[];
   materials?: string[];
   packageSize?: string | null;
+  weightGrams?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  shippingCategory?: string | null;
   stock?: number | null;
   status?: string | null;
   prices?: PriceMap | null;
