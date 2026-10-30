@@ -41,6 +41,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { cart } = useAppSelector((state: RootState) => state.carts);
+  const rehydrated = useAppSelector((state: any) => state?._persist?.rehydrated);
   const { locale, t, formatPrice } = useI18n();
   const [step, setStep] = useState<Step>(1);
   const [customer, setCustomer] = useState<Customer>(initialCustomer);
@@ -52,10 +53,10 @@ export default function CheckoutPage() {
   const items = cart?.items || [];
 
   useEffect(() => {
-    if (items.length === 0 && !submitting) {
-      router.replace("/cart");
+    if (rehydrated && items.length === 0 && !submitting) {
+      router.replace("/cart/");
     }
-  }, [items.length, submitting, router]);
+  }, [rehydrated, items.length, submitting, router]);
 
   const subtotal = useMemo(
     () =>
@@ -139,6 +140,16 @@ export default function CheckoutPage() {
       {errors[key] && <span className="text-xs text-red-500">{errors[key]}</span>}
     </div>
   );
+
+  if (!rehydrated) {
+    return (
+      <main className="pb-20">
+        <div className="max-w-frame mx-auto px-4 xl:px-0 py-16 text-center text-black/50">
+          {t("common.loading")}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="pb-20">
