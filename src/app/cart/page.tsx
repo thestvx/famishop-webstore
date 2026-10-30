@@ -46,7 +46,7 @@ export default function CartPage() {
                   </React.Fragment>
                 ))}
               </div>
-              <div className="w-full lg:max-w-[505px] p-5 md:px-6 flex-col space-y-4 md:space-y-6 rounded-[20px] border border-black/10">
+              <div className="w-full lg:max-w-[505px] p-5 md:px-6 flex flex-col gap-5 md:gap-6 rounded-[20px] border border-black/10">
                 <h6 className="text-xl md:text-2xl font-bold text-black">
                   {t("cart.orderSummary")}
                 </h6>
@@ -77,8 +77,8 @@ export default function CartPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex space-x-3">
-                  <InputGroup className="bg-[#F0F0F0]">
+                <div className="flex items-stretch gap-3">
+                  <InputGroup className="bg-[#F0F0F0] flex-1 min-w-0">
                     <InputGroup.Text>
                       <MdOutlineLocalOffer className="text-black/40 text-2xl" />
                     </InputGroup.Text>
@@ -91,12 +91,12 @@ export default function CartPage() {
                   </InputGroup>
                   <Button
                     type="button"
-                    className="bg-black rounded-full w-full max-w-[119px] h-[48px]"
+                    className="bg-black rounded-full w-[119px] shrink-0 h-[48px]"
                   >
                     {t("cart.apply")}
                   </Button>
                 </div>
-                <Link href="/checkout">
+                <Link href="/checkout" className="block w-full">
                   <Button
                     type="button"
                     className="text-sm md:text-base font-medium bg-black rounded-full w-full py-4 h-[54px] md:h-[60px] group"

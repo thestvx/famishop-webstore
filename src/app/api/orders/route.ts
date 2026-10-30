@@ -125,7 +125,7 @@ function extractMissingColumn(message: string): string | null {
 async function persistOrder(payload: Record<string, any>) {
   if (!supabase) throw new Error("Supabase is not configured");
   const current: Record<string, any> = { ...payload };
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
     const { data, error } = await supabase.from("orders").insert([current]).select("id").single();
     if (!error) return data?.id;
     const missing = extractMissingColumn(error.message || "");
@@ -228,25 +228,60 @@ export async function POST(req: Request) {
   const tax = 0;
   const total = Math.round((subtotal - discount + shippingFee + tax) * 100) / 100;
 
+  const payment = body?.payment || {};
+  const paymentMethod = payment.method === "dummy_card" ? "dummy_card" : "cash_on_delivery";
+  const paymentStatus = paymentMethod === "dummy_card" ? "paid" : "pending";
+  const paymentReference =
+    paymentMethod === "dummy_card" ? String(payment.reference || "TEST-CARD") : null;
+
+  const shippingMethodLabel =
+    shippingSelection.label ||
+    [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
+    "standard";
+  const shippingAddress = {
+    firstName,
+    lastName,
+    email,
+    phone,
+    country,
+    city,
+    address,
+    postalCode: customer.postalCode || null,
+    region: customer.region || null,
+  };
+  const customerSnapshot = {
+    name: `${firstName} ${lastName}`.trim(),
+    firstName,
+    lastName,
+    email,
+    phone,
+    country,
+    city,
+    address,
+    postalCode: customer.postalCode || null,
+    region: customer.region || null,
+    shippingAddress,
+    shippingMethod: shippingMethodLabel,
+    shippingFee,
+    currency,
+    subtotal,
+    discount,
+    tax,
+    total,
+    status: "pending",
+    paymentStatus,
+    paymentMethod,
+    paymentReference,
+    items,
+    notes: body?.notes || null,
+  };
+
   const payload: Record<string, any> = {
     customer_name: `${firstName} ${lastName}`.trim(),
     customer_email: email,
     customer_phone: phone,
-    shipping_address: {
-      firstName,
-      lastName,
-      email,
-      phone,
-      country,
-      city,
-      address,
-      postalCode: customer.postalCode || null,
-      region: customer.region || null,
-    },
-    shipping_method:
-      shippingSelection.label ||
-      [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
-      "standard",
+    shipping_address: shippingAddress,
+    shipping_method: shippingMethodLabel,
     shipping_fee: shippingFee,
     currency,
     subtotal,
@@ -254,10 +289,12 @@ export async function POST(req: Request) {
     tax,
     total,
     status: "pending",
-    payment_status: "pending",
-    payment_method: "cash_on_delivery",
+    payment_status: paymentStatus,
+    payment_method: paymentMethod,
+    payment_reference: paymentReference,
     items,
     notes: body?.notes || null,
+    customer: JSON.stringify(customerSnapshot),
   };
 
   try {

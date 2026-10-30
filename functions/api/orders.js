@@ -1,10 +1,13 @@
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
-  const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey) {
-    return json({ error: "Supabase is not configured" }, 500);
-  }
+  const supabaseUrl =
+    env.NEXT_PUBLIC_SUPABASE_URL ||
+    env.SUPABASE_URL ||
+    "https://lahorqznlrzdlupveoja.supabase.co";
+  const supabaseKey =
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    env.SUPABASE_ANON_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhaG9ycXpubHJ6ZGx1cHZlb2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjQzNjgsImV4cCI6MjEwODcwMDM2OH0.5qGE1B8hQUxW113xKEI6oW9NoIraAkmacMFbb1kCRws";
 
   let body;
   try {
@@ -79,15 +82,60 @@ export async function onRequestPost(context) {
   const tax = 0;
   const total = Math.round((subtotal - discount + shippingFee + tax) * 100) / 100;
 
+  const payment = body?.payment || {};
+  const paymentMethod = payment.method === "dummy_card" ? "dummy_card" : "cash_on_delivery";
+  const paymentStatus = paymentMethod === "dummy_card" ? "paid" : "pending";
+  const paymentReference =
+    paymentMethod === "dummy_card" ? String(payment.reference || "TEST-CARD") : null;
+
+  const shippingMethodLabel =
+    shippingSelection.label ||
+    [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
+    "standard";
+  const shippingAddress = {
+    firstName,
+    lastName,
+    email,
+    phone,
+    country,
+    city,
+    address,
+    postalCode: customer.postalCode || null,
+    region: customer.region || null,
+  };
+  const customerSnapshot = {
+    name: `${firstName} ${lastName}`.trim(),
+    firstName,
+    lastName,
+    email,
+    phone,
+    country,
+    city,
+    address,
+    postalCode: customer.postalCode || null,
+    region: customer.region || null,
+    shippingAddress,
+    shippingMethod: shippingMethodLabel,
+    shippingFee,
+    currency,
+    subtotal,
+    discount,
+    tax,
+    total,
+    status: "pending",
+    paymentStatus,
+    paymentMethod,
+    paymentReference,
+    items,
+    notes: body?.notes || null,
+  };
+
   const payload = {
     customer_name: `${firstName} ${lastName}`.trim(),
     customer_email: email,
     customer_phone: phone,
-    shipping_address: { firstName, lastName, email, phone, country, city, address, postalCode: customer.postalCode || null, region: customer.region || null },
-    shipping_method:
-      shippingSelection.label ||
-      [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
-      "standard",
+    shipping_address: shippingAddress,
+    shipping_method: shippingMethodLabel,
     shipping_fee: shippingFee,
     currency,
     subtotal,
@@ -95,15 +143,17 @@ export async function onRequestPost(context) {
     tax,
     total,
     status: "pending",
-    payment_status: "pending",
-    payment_method: "cash_on_delivery",
+    payment_status: paymentStatus,
+    payment_method: paymentMethod,
+    payment_reference: paymentReference,
     items,
     notes: body?.notes || null,
+    customer: JSON.stringify(customerSnapshot),
   };
 
   // persist with column fallback
   let current = { ...payload };
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < 30; attempt++) {
     const res = await fetch(`${supabaseUrl}/rest/v1/orders`, {
       method: "POST",
       headers: {

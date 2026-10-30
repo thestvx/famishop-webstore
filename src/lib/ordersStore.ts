@@ -12,36 +12,75 @@ function toNumber(value: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function parseLegacyCustomer(value: any): AnyRecord {
+  if (!value) return {};
+  if (typeof value === "object") return value as AnyRecord;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object") return parsed as AnyRecord;
+      } catch {
+        return { name: value };
+      }
+    }
+    return { name: value };
+  }
+  return {};
+}
+
+function normalizeItems(raw: any): OrderItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item: any) => ({
+    id: Number(item.id),
+    name: toString(item.name),
+    srcUrl: toString(item.srcUrl || item.src_url),
+    price: toNumber(item.price),
+    quantity: Math.max(1, Math.round(toNumber(item.quantity))),
+    attributes: Array.isArray(item.attributes) ? item.attributes.map((v: any) => String(v)) : [],
+    discount: item.discount || { amount: 0, percentage: 0 },
+  }));
+}
+
 function normalizeOrder(row: AnyRecord): Order {
-  const items: OrderItem[] = Array.isArray(row.items)
-    ? row.items.map((item: any) => ({
-        id: Number(item.id),
-        name: toString(item.name),
-        srcUrl: toString(item.srcUrl || item.src_url),
-        price: toNumber(item.price),
-        quantity: Math.max(1, Math.round(toNumber(item.quantity))),
-        attributes: Array.isArray(item.attributes) ? item.attributes.map((v: any) => String(v)) : [],
-        discount: item.discount || { amount: 0, percentage: 0 },
-      }))
-    : [];
+  const legacy = parseLegacyCustomer(row.customer);
+  const shippingAddress =
+    row.shipping_address ||
+    row.shippingAddress ||
+    legacy.shippingAddress || {
+      address: legacy.address,
+      city: legacy.city,
+      postalCode: legacy.postalCode,
+      country: legacy.country,
+      region: legacy.region,
+    };
+  const items = normalizeItems(Array.isArray(row.items) ? row.items : legacy.items);
+  const fallbackName =
+    legacy.name ||
+    `${toString(legacy.firstName)} ${toString(legacy.lastName)}`.trim();
 
   return {
     id: Number(row.id),
     createdAt: toString(row.created_at || row.createdAt),
-    customerName: toString(row.customer_name || row.customerName || row.customer),
-    customerEmail: toString(row.customer_email || row.customerEmail),
-    customerPhone: toString(row.customer_phone || row.customerPhone),
-    shippingAddress: row.shipping_address || row.shippingAddress || {},
-    shippingMethod: row.shipping_method || row.shippingMethod || null,
-    shippingFee: toNumber(row.shipping_fee ?? row.shippingFee),
-    currency: toString(row.currency) || "EUR",
-    subtotal: toNumber(row.subtotal),
-    discount: toNumber(row.discount),
-    tax: toNumber(row.tax),
-    total: toNumber(row.total),
-    status: toString(row.status) || "pending",
-    paymentStatus: toString(row.payment_status || row.paymentStatus) || "pending",
-    paymentMethod: toString(row.payment_method || row.paymentMethod) || "cash_on_delivery",
+    customerName: toString(row.customer_name || row.customerName || fallbackName),
+    customerEmail: toString(row.customer_email || row.customerEmail || legacy.email),
+    customerPhone: toString(row.customer_phone || row.customerPhone || legacy.phone),
+    shippingAddress,
+    shippingMethod: row.shipping_method || row.shippingMethod || legacy.shippingMethod || null,
+    shippingFee: toNumber(row.shipping_fee ?? row.shippingFee ?? legacy.shippingFee),
+    currency: toString(row.currency || legacy.currency) || "EUR",
+    subtotal: toNumber(row.subtotal ?? legacy.subtotal),
+    discount: toNumber(row.discount ?? legacy.discount),
+    tax: toNumber(row.tax ?? legacy.tax),
+    total: toNumber(row.total ?? legacy.total),
+    status: toString(row.status || legacy.status) || "pending",
+    paymentStatus: toString(row.payment_status || row.paymentStatus || legacy.paymentStatus) || "pending",
+    paymentMethod:
+      toString(row.payment_method || row.paymentMethod || legacy.paymentMethod) ||
+      "cash_on_delivery",
+    paymentReference:
+      toString(row.payment_reference || row.paymentReference || legacy.paymentReference) || null,
     items,
   };
 }

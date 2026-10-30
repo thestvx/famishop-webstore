@@ -25,6 +25,9 @@ export async function onRequestPost(context) {
   const city = String(body?.city || "").trim();
   const incomingItems = Array.isArray(body?.items) ? body.items : [];
   if (!postalCode || !city) return json({ error: "Postal code and city are required" }, 400);
+  if (!/^\d{5}$/.test(postalCode)) {
+    return json({ error: "Invalid postal code for the selected country" }, 400);
+  }
   if (incomingItems.length === 0) return json({ error: "Cart is empty" }, 400);
 
   const contentCode = env.BOXTAL_CONTENT_CODE || "40110";

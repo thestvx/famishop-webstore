@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 type Step = 1 | 2 | 3 | 4;
 type CountryCode = "FR" | "IT";
+type PaymentMethod = "cod" | "dummy_card";
 
 type Customer = {
   firstName: string;
@@ -73,6 +74,13 @@ export default function CheckoutPage() {
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [card, setCard] = useState({
+    number: "4242 4242 4242 4242",
+    expiry: "12/34",
+    cvc: "123",
+    name: "Test Customer",
+  });
 
   const items = useMemo(() => cart?.items || [], [cart?.items]);
   const shippingFee = selectedOffer?.price || 0;
@@ -137,6 +145,7 @@ export default function CheckoutPage() {
     if (!customer.address.trim()) e.address = t("checkout.required");
     if (!customer.city.trim()) e.city = t("checkout.required");
     if (!customer.postalCode.trim()) e.postalCode = t("checkout.required");
+    else if (!/^\d{5}$/.test(customer.postalCode.trim())) e.postalCode = t("checkout.invalidPostalCode");
     if (!customer.firstName.trim()) e.firstName = t("checkout.required");
     if (!customer.lastName.trim()) e.lastName = t("checkout.required");
     if (!customer.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) e.email = t("checkout.invalidEmail");
@@ -163,8 +172,19 @@ export default function CheckoutPage() {
   const handleBack = () => setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
 
   const handleSubmit = async () => {
-    setSubmitting(true);
     setSubmitError(null);
+    if (paymentMethod === "dummy_card") {
+      const digits = card.number.replace(/\D/g, "");
+      if (
+        digits.length < 12 ||
+        !/^\d{2}\/\d{2}$/.test(card.expiry.trim()) ||
+        !/^\d{3,4}$/.test(card.cvc.trim())
+      ) {
+        setSubmitError(t("checkout.invalidCard"));
+        return;
+      }
+    }
+    setSubmitting(true);
     try {
       const payload = {
         currency: (window.localStorage.getItem("famishop-currency") as string) || "EUR",
@@ -188,6 +208,14 @@ export default function CheckoutPage() {
               deliveryDate: selectedOffer.deliveryDate,
             }
           : null,
+        payment: {
+          method: paymentMethod === "dummy_card" ? "dummy_card" : "cash_on_delivery",
+          status: paymentMethod === "dummy_card" ? "paid" : "pending",
+          reference:
+            paymentMethod === "dummy_card"
+              ? `TEST-${card.number.replace(/\D/g, "").slice(-4)}`
+              : null,
+        },
       };
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -322,6 +350,24 @@ export default function CheckoutPage() {
 
             {step === 2 && (
               <div className="space-y-3">
+                <div className="rounded-xl bg-[#F0F0F0] p-4 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{t("checkout.shippingDestination")}</div>
+                      <div className="text-black/60">
+                        {customer.address}, {customer.postalCode} {customer.city},{" "}
+                        {COUNTRY_NAME[customer.country]}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="text-xs font-medium underline underline-offset-2 shrink-0"
+                    >
+                      {t("checkout.editAddress")}
+                    </button>
+                  </div>
+                </div>
                 {shippingLoading && (
                   <div className="p-6 text-center text-sm text-black/50">{t("checkout.shippingLoading")}</div>
                 )}
@@ -424,13 +470,82 @@ export default function CheckoutPage() {
 
             {step === 4 && (
               <div className="space-y-3">
-                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer">
-                  <input type="radio" name="payment" value="cod" checked readOnly />
+                <label
+                  className={cn(
+                    "flex items-center gap-3 p-4 border rounded-xl cursor-pointer",
+                    paymentMethod === "cod" ? "border-black" : "border-black/10"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cod"
+                    checked={paymentMethod === "cod"}
+                    onChange={() => setPaymentMethod("cod")}
+                  />
                   <div>
                     <div className="font-medium">{t("checkout.paymentCOD")}</div>
                     <div className="text-sm text-black/50">{t("checkout.paymentCODDesc")}</div>
                   </div>
                 </label>
+                <label
+                  className={cn(
+                    "flex items-center gap-3 p-4 border rounded-xl cursor-pointer",
+                    paymentMethod === "dummy_card" ? "border-black" : "border-black/10"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="dummy_card"
+                    checked={paymentMethod === "dummy_card"}
+                    onChange={() => setPaymentMethod("dummy_card")}
+                  />
+                  <div>
+                    <div className="font-medium">{t("checkout.paymentCard")}</div>
+                    <div className="text-sm text-black/50">{t("checkout.paymentCardDesc")}</div>
+                  </div>
+                </label>
+                {paymentMethod === "dummy_card" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-black/10 rounded-xl">
+                    <div className="sm:col-span-2 flex flex-col gap-1">
+                      <label className="text-sm font-medium text-black/70">{t("checkout.cardNumber")}</label>
+                      <input
+                        value={card.number}
+                        onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))}
+                        inputMode="numeric"
+                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium text-black/70">{t("checkout.cardExpiry")}</label>
+                      <input
+                        value={card.expiry}
+                        onChange={(e) => setCard((c) => ({ ...c, expiry: e.target.value }))}
+                        placeholder="MM/YY"
+                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium text-black/70">{t("checkout.cardCvc")}</label>
+                      <input
+                        value={card.cvc}
+                        onChange={(e) => setCard((c) => ({ ...c, cvc: e.target.value }))}
+                        inputMode="numeric"
+                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
+                      />
+                    </div>
+                    <div className="sm:col-span-2 flex flex-col gap-1">
+                      <label className="text-sm font-medium text-black/70">{t("checkout.cardName")}</label>
+                      <input
+                        value={card.name}
+                        onChange={(e) => setCard((c) => ({ ...c, name: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm"
+                      />
+                    </div>
+                    <div className="sm:col-span-2 text-xs text-amber-600">{t("checkout.testCardNote")}</div>
+                  </div>
+                )}
                 {submitError && <div className="text-sm text-red-500">{submitError}</div>}
               </div>
             )}

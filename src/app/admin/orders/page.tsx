@@ -53,8 +53,17 @@ export default function AdminOrdersPage() {
               <div className="text-sm mb-2">
                 <strong>{order.customerName}</strong> · {order.customerEmail} · {order.customerPhone}
               </div>
-              <div className="text-sm text-black/60 mb-3">
-                {order.shippingAddress?.address}, {order.shippingAddress?.city}, {order.shippingAddress?.country}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm text-black/60 mb-3">
+                <div>
+                  {order.shippingAddress?.address}, {order.shippingAddress?.postalCode}{" "}
+                  {order.shippingAddress?.city}, {order.shippingAddress?.country}
+                </div>
+                <div>
+                  {t("admin.shippingMethod")}: {order.shippingMethod || "-"}
+                </div>
+                <div>
+                  {t("admin.paymentMethod")}: {order.paymentMethod}
+                </div>
               </div>
               <div className="space-y-1 text-sm">
                 {order.items.map((item, idx) => (
@@ -66,11 +75,25 @@ export default function AdminOrdersPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-3 pt-3 border-t flex justify-between font-bold">
-                <span>{t("cart.total")}</span>
-                <span>
-                  {order.total} {order.currency}
-                </span>
+              <div className="mt-3 pt-3 border-t space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-black/60">{t("admin.subtotal")}</span>
+                  <span>
+                    {order.subtotal} {order.currency}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-black/60">{t("admin.shippingFee")}</span>
+                  <span>
+                    {order.shippingFee} {order.currency}
+                  </span>
+                </div>
+                <div className="flex justify-between font-bold">
+                  <span>{t("cart.total")}</span>
+                  <span>
+                    {order.total} {order.currency}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

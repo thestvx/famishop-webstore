@@ -110,6 +110,9 @@ export async function POST(req: Request) {
   if (!postalCode || !city) {
     return NextResponse.json({ error: "Postal code and city are required" }, { status: 400 });
   }
+  if (!/^\d{5}$/.test(postalCode)) {
+    return NextResponse.json({ error: "Invalid postal code for the selected country" }, { status: 400 });
+  }
   if (incomingItems.length === 0) {
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   }

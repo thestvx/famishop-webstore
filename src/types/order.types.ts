@@ -25,5 +25,6 @@ export type Order = {
   status: string;
   paymentStatus: string;
   paymentMethod: string;
+  paymentReference?: string | null;
   items: OrderItem[];
 };
