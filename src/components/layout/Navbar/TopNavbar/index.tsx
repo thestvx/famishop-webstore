@@ -155,7 +155,7 @@ const TopNavbar = () => {
               }}
               className="text-sm px-2 py-1 rounded-md hover:bg-gray-100 whitespace-nowrap"
             >
-              {region === "algeria" ? "Algérie" : "Europe"}
+              Europe
             </button>
             <LocaleSwitcher />
             <CurrencySwitcher />

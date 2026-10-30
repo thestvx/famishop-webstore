@@ -3,8 +3,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type Locale = "en" | "fr" | "ar" | "it";
-export type Currency = "EUR" | "DZD";
-export type Region = "algeria" | "europe";
+export type Currency = "EUR" | "USD";
+export type Region = "europe";
 
 type I18nContextValue = {
   locale: Locale;
@@ -82,6 +82,34 @@ const translations: Record<Locale, Record<string, string>> = {
      "admin.orders": "Orders",
       "admin.ordersDesc": "Manage your orders here.",
       "admin.noOrders": "No orders yet.",
+      "admin.discounts": "Discounts",
+      "admin.discountsDesc": "Manage your promo codes here.",
+      "admin.createDiscount": "Create Discount",
+      "admin.searchDiscounts": "Search discounts...",
+      "admin.noDiscounts": "No discounts yet.",
+      "admin.discountName": "Discount Name",
+      "admin.promoCode": "Promo Code",
+      "admin.discountType": "Discount Type",
+      "admin.discountValue": "Discount Value",
+      "admin.currency": "Currency",
+      "admin.startDate": "Start Date",
+      "admin.expiryDate": "Expiry Date",
+      "admin.usageLimit": "Usage Limit",
+      "admin.perCustomerLimit": "Per-Customer Limit",
+      "admin.minOrderAmount": "Minimum Order Amount",
+      "admin.status": "Status",
+      "admin.actions": "Actions",
+      "admin.edit": "Edit",
+      "admin.toggleStatus": "Toggle status",
+      "admin.delete": "Delete",
+      "admin.editDiscount": "Edit Discount",
+      "admin.percentage": "Percentage",
+      "admin.fixedAmount": "Fixed Amount",
+      "admin.active": "Active",
+      "admin.inactive": "Inactive",
+      "admin.save": "Save",
+      "admin.confirmDeleteDiscount": "Are you sure you want to delete this discount? This action cannot be undone.",
+      "admin.usage": "Usage",
       "admin.deleteOrder": "Delete",
       "admin.confirmDeleteTitle": "Confirm deletion",
       "admin.confirmDeleteMessage": "Are you sure you want to delete this order? This action cannot be undone.",
@@ -1290,7 +1318,7 @@ const EXCHANGE_RATE_EUR_TO_DZD = 145.0;
 
 const currencySymbols: Record<Currency, string> = {
   EUR: "€",
-  DZD: "د.ج",
+  USD: "$",
 };
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
@@ -1310,19 +1338,10 @@ const getInitialLocale = (): Locale => {
 
 const getInitialRegion = (): Region | null => {
   if (typeof window === "undefined") return null;
-  const stored = window.localStorage.getItem("famishop-region");
-  if (stored === "algeria" || stored === "europe") {
-    return stored;
-  }
-  return null;
+  return "europe";
 };
 
 const getInitialCurrency = (region: Region | null): Currency => {
-  if (typeof window !== "undefined") {
-    const stored = window.localStorage.getItem("famishop-currency");
-    if (stored === "EUR" || stored === "DZD") return stored;
-  }
-  if (region === "algeria") return "DZD";
   return "EUR";
 };
 
@@ -1348,11 +1367,10 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 
   const setRegion = useCallback((next: Region) => {
     setRegionState(next);
-    const nextCurrency = next === "algeria" ? "DZD" : "EUR";
-    setCurrencyState(nextCurrency);
+    setCurrencyState("EUR");
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("famishop-region", next);
-      window.localStorage.setItem("famishop-currency", nextCurrency);
+      window.localStorage.setItem("famishop-region", "europe");
+      window.localStorage.setItem("famishop-currency", "EUR");
     }
   }, []);
 
@@ -1402,10 +1420,6 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}`;
-      }
-      if (currency === "DZD") {
-        const converted = amount * exchangeRate;
-        return `${Math.round(converted).toLocaleString("fr-DZ")} د.ج`;
       }
       const converted = amount;
       return `${converted.toLocaleString(locale === "fr" ? "fr-FR" : locale === "it" ? "it-IT" : locale === "ar" ? "ar-EG" : "en-US", {
