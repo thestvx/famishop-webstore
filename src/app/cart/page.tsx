@@ -67,7 +67,7 @@ export default function CartPage() {
                     <span className="md:text-xl text-black/60">
                       {t("cart.deliveryFee")}
                     </span>
-                    <span className="md:text-xl font-bold">{t("cart.free")}</span>
+                    <span className="md:text-xl font-bold">{t("cart.calculatedAtCheckout")}</span>
                   </div>
                   <hr className="border-t-black/10" />
                   <div className="flex items-center justify-between">

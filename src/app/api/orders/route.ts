@@ -8,6 +8,89 @@ type IncomingItem = {
 };
 
 const EXCHANGE_KEY = process.env.EXCHANGE_RATE_API_KEY || "f309933485e263b0337b76ad";
+const BOXTAL_BASE = "https://www.envoimoinscher.com/api/v1";
+
+function round(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function xmlTag(block: string, name: string): string {
+  const match = block.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`));
+  return match ? match[1] : "";
+}
+
+async function resolveShippingBase(input: {
+  country: string;
+  postalCode: string;
+  city: string;
+  items: IncomingItem[];
+  selected?: { operator?: string; service?: string; price?: number };
+}): Promise<number> {
+  const fallback = Math.max(0, Math.min(500, Number(input.selected?.price) || 0));
+  const access = process.env.BOXTAL_ACCESS_KEY;
+  const secret = process.env.BOXTAL_SECRET_KEY;
+  if (!access || !secret) return fallback;
+  if (input.country !== "FR" && input.country !== "IT") return fallback;
+  if (!input.postalCode || !input.city) return fallback;
+
+  try {
+    const itemWeight = Number(process.env.BOXTAL_DEFAULT_ITEM_WEIGHT_KG || 0.5);
+    const quantity = input.items.reduce(
+      (sum, item) => sum + Math.max(1, Math.round(Number(item.quantity) || 1)),
+      0
+    );
+    const weight = Math.max(1, Math.round(quantity * itemWeight * 10) / 10);
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const params = new URLSearchParams({
+      "colis_1.poids": String(weight),
+      "colis_1.longueur": "30",
+      "colis_1.largeur": "20",
+      "colis_1.hauteur": "10",
+      code_contenu: process.env.BOXTAL_CONTENT_CODE || "40110",
+      "expediteur.pays": process.env.BOXTAL_SHIPPER_COUNTRY || "FR",
+      "expediteur.code_postal": process.env.BOXTAL_SHIPPER_POSTAL_CODE || "75001",
+      "expediteur.ville": process.env.BOXTAL_SHIPPER_CITY || "Paris",
+      "expediteur.type": "entreprise",
+      "destinataire.pays": input.country,
+      "destinataire.code_postal": input.postalCode,
+      "destinataire.ville": input.city,
+      "destinataire.type": "particulier",
+      collecte: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    });
+    const auth = Buffer.from(`${access}:${secret}`).toString("base64");
+    const res = await fetch(`${BOXTAL_BASE}/cotation?${params.toString()}`, {
+      headers: { Authorization: `Basic ${auth}`, Accept: "application/xml" },
+      cache: "no-store",
+    });
+    if (!res.ok) return fallback;
+    const xml = await res.text();
+    const offers = Array.from(xml.matchAll(/<offer>([\s\S]*?)<\/offer>/g)).map((match) => {
+      const block = match[1];
+      const operatorBlock = xmlTag(block, "operator");
+      const serviceBlock = xmlTag(block, "service");
+      const priceBlock = xmlTag(block, "price");
+      const deliveryBlock = xmlTag(block, "delivery");
+      return {
+        operator: xmlTag(operatorBlock, "code"),
+        service: xmlTag(serviceBlock, "code"),
+        deliveryType: xmlTag(xmlTag(deliveryBlock, "type"), "code"),
+        price: Number(xmlTag(priceBlock, "tax-inclusive") || 0),
+      };
+    });
+    const home = offers.filter((offer) => offer.deliveryType === "HOME" && offer.price > 0);
+    const pool = home.length ? home : offers.filter((offer) => offer.price > 0);
+    if (pool.length === 0) return fallback;
+    const selected = pool.find(
+      (offer) =>
+        offer.operator === input.selected?.operator && offer.service === input.selected?.service
+    );
+    const chosen = selected || pool.sort((a, b) => a.price - b.price)[0];
+    return round(chosen.price);
+  } catch {
+    return fallback;
+  }
+}
 
 async function getRate(currency: string): Promise<number> {
   if (currency === "EUR") return 1;
@@ -129,7 +212,19 @@ export async function POST(req: Request) {
 
   const subtotal = Math.round(subtotalBase * rate * 100) / 100;
   const discount = 0;
-  const shippingFee = 0;
+  const shippingSelection = body?.shipping || {};
+  const shippingBase = await resolveShippingBase({
+    country,
+    postalCode: String(customer.postalCode || "").trim(),
+    city,
+    items: incomingItems,
+    selected: {
+      operator: shippingSelection.operator,
+      service: shippingSelection.service,
+      price: shippingSelection.price,
+    },
+  });
+  const shippingFee = Math.round(shippingBase * rate * 100) / 100;
   const tax = 0;
   const total = Math.round((subtotal - discount + shippingFee + tax) * 100) / 100;
 
@@ -148,7 +243,10 @@ export async function POST(req: Request) {
       postalCode: customer.postalCode || null,
       region: customer.region || null,
     },
-    shipping_method: "standard",
+    shipping_method:
+      shippingSelection.label ||
+      [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
+      "standard",
     shipping_fee: shippingFee,
     currency,
     subtotal,
