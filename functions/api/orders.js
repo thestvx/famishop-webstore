@@ -83,10 +83,9 @@ export async function onRequestPost(context) {
   const total = Math.round((subtotal - discount + shippingFee + tax) * 100) / 100;
 
   const payment = body?.payment || {};
-  const paymentMethod = payment.method === "dummy_card" ? "dummy_card" : "cash_on_delivery";
-  const paymentStatus = paymentMethod === "dummy_card" ? "paid" : "pending";
-  const paymentReference =
-    paymentMethod === "dummy_card" ? String(payment.reference || "TEST-CARD") : null;
+  const paymentMethod = payment.method === "stripe" ? "stripe" : "cash_on_delivery";
+  const paymentStatus = payment.method === "stripe" ? "paid" : "pending";
+  const paymentReference = payment.method === "stripe" ? String(payment.reference || "") || null : null;
 
   const shippingMethodLabel =
     shippingSelection.label ||
