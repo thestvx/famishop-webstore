@@ -13,6 +13,7 @@ import React, { useState, useEffect } from "react";
 import { RootState } from "@/lib/store";
 import { useAppSelector } from "@/lib/hooks/redux";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 
 export default function CartPage() {
@@ -20,6 +21,18 @@ export default function CartPage() {
     (state: RootState) => state.carts
   );
   const { t, formatPrice } = useI18n();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Keep cartId in the URL for traceability (not sufficient for access control).
+  useEffect(() => {
+    if (!cart?.cartId) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("cartId") !== cart.cartId) {
+      params.set("cartId", cart.cartId);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [cart?.cartId, router, pathname]);
   const [promoCode, setPromoCode] = useState("");
   const [promo, setPromo] = useState<any>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
