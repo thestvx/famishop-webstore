@@ -68,24 +68,27 @@ export async function onRequestPost(context) {
   }
 
   const offers = parseOffers(xml);
-  const homeOffers = offers.filter((offer) => offer.deliveryType === "HOME");
-  const list = (homeOffers.length ? homeOffers : offers).sort((a, b) => a.price - b.price);
   const unique = [];
   const seen = new Set();
-  for (const offer of list) {
+  for (const offer of offers.sort((a, b) => a.price - b.price)) {
     const key = `${offer.operator}:${offer.service}`;
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(offer);
-    if (unique.length >= 6) break;
   }
+  const ordered = [];
+  const byCategory = (cat) => unique.filter((offer) => offer.category === cat).sort((a, b) => a.price - b.price);
+  for (const cat of ["domicile", "relais", "express"]) {
+    ordered.push(...byCategory(cat));
+  }
+  const final = ordered.length ? ordered : unique;
 
-  if (unique.length === 0) {
+  if (final.length === 0) {
     return json({ error: "No shipping options are available for this address" }, 404);
   }
 
   return json({
-    offers: unique,
+    offers: final,
     package: pkg,
     origin: { country: shipperCountry, postalCode: shipperPostal, city: shipperCity },
   });
@@ -114,6 +117,13 @@ function decodeXml(value) {
     .replace(/&gt;/g, ">");
 }
 
+function categorizeOffer(deliveryType, carrier, service, label) {
+  if (deliveryType === "PICKUP_POINT") return "relais";
+  const text = `${carrier} ${service} ${label}`.toLowerCase();
+  if (/express/.test(text)) return "express";
+  return "domicile";
+}
+
 function parseOffers(xml) {
   return [...xml.matchAll(/<offer>([\s\S]*?)<\/offer>/g)]
     .map((match) => {
@@ -123,16 +133,21 @@ function parseOffers(xml) {
       const priceBlock = tag(block, "price");
       const deliveryBlock = tag(block, "delivery");
       const deliveryTypeBlock = tag(deliveryBlock, "type");
+      const carrier = decodeXml(tag(operatorBlock, "label"));
+      const service = tag(serviceBlock, "code");
+      const label = decodeXml(tag(serviceBlock, "label"));
+      const deliveryType = tag(deliveryTypeBlock, "code");
       return {
         operator: tag(operatorBlock, "code"),
-        carrier: decodeXml(tag(operatorBlock, "label")),
-        service: tag(serviceBlock, "code"),
-        label: decodeXml(tag(serviceBlock, "label")),
+        carrier,
+        service,
+        label,
         price: Number(tag(priceBlock, "tax-inclusive") || 0),
         currency: tag(priceBlock, "currency") || "EUR",
-        deliveryType: tag(deliveryTypeBlock, "code"),
+        deliveryType,
         deliveryDate: tag(deliveryBlock, "date") || null,
         deliveryLabel: decodeXml(tag(deliveryBlock, "label")) || null,
+        category: categorizeOffer(deliveryType, carrier, service, label),
       };
     })
     .filter((offer) => offer.operator && offer.service && Number.isFinite(offer.price) && offer.price > 0);

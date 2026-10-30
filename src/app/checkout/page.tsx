@@ -37,6 +37,7 @@ type ShippingOffer = {
   deliveryType: string;
   deliveryDate: string | null;
   deliveryLabel: string | null;
+  category: "domicile" | "relais" | "express";
 };
 
 const PHONE_PREFIX: Record<CountryCode, string> = { FR: "+33", IT: "+39" };
@@ -388,44 +389,55 @@ export default function CheckoutPage() {
                 {!shippingLoading && !shippingError && offers.length > 0 && (
                   <>
                     <div className="text-sm text-black/60 mb-2">{t("checkout.shippingSelectPrompt")}</div>
-                    {offers.map((offer) => {
-                      const key = `${offer.operator}:${offer.service}`;
+                    {(["domicile", "relais", "express"] as const).map((cat) => {
+                      const group = offers.filter((offer) => offer.category === cat);
+                      if (group.length === 0) return null;
                       return (
-                        <label
-                          key={key}
-                          className={cn(
-                            "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition",
-                            selectedOffer &&
-                              selectedOffer.operator === offer.operator &&
-                              selectedOffer.service === offer.service
-                              ? "border-black"
-                              : "border-black/10"
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name="shipping"
-                            value={key}
-                            checked={
-                              !!selectedOffer &&
-                              selectedOffer.operator === offer.operator &&
-                              selectedOffer.service === offer.service
-                            }
-                            onChange={() => setSelectedOffer(offer)}
-                          />
-                          <div>
-                            <div className="font-medium">
-                              {offer.carrier} - {offer.label}
-                            </div>
-                            <div className="text-sm text-black/50">
-                              {offer.deliveryLabel || t("checkout.deliveryHome")}
-                              {offer.deliveryDate
-                                ? ` · ${t("checkout.deliveryEstimate")}: ${formatDeliveryDate(offer.deliveryDate)}`
-                                : ""}
-                            </div>
+                        <div key={cat} className="space-y-2">
+                          <div className="text-xs font-bold uppercase tracking-wide text-black/50 pt-2">
+                            {t(`checkout.shippingCategory.${cat}`)}
                           </div>
-                          <span className="ml-auto font-bold">{formatPrice(offer.price)}</span>
-                        </label>
+                          {group.map((offer) => {
+                            const key = `${offer.operator}:${offer.service}`;
+                            return (
+                              <label
+                                key={key}
+                                className={cn(
+                                  "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition",
+                                  selectedOffer &&
+                                    selectedOffer.operator === offer.operator &&
+                                    selectedOffer.service === offer.service
+                                    ? "border-black"
+                                    : "border-black/10"
+                                )}
+                              >
+                                <input
+                                  type="radio"
+                                  name="shipping"
+                                  value={key}
+                                  checked={
+                                    !!selectedOffer &&
+                                    selectedOffer.operator === offer.operator &&
+                                    selectedOffer.service === offer.service
+                                  }
+                                  onChange={() => setSelectedOffer(offer)}
+                                />
+                                <div>
+                                  <div className="font-medium">
+                                    {offer.carrier} - {offer.label}
+                                  </div>
+                                  <div className="text-sm text-black/50">
+                                    {offer.deliveryLabel || t("checkout.deliveryHome")}
+                                    {offer.deliveryDate
+                                      ? ` · ${t("checkout.deliveryEstimate")}: ${formatDeliveryDate(offer.deliveryDate)}`
+                                      : ""}
+                                  </div>
+                                </div>
+                                <span className="ml-auto font-bold">{formatPrice(offer.price)}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       );
                     })}
                   </>

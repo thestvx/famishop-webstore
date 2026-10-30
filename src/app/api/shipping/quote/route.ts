@@ -15,6 +15,7 @@ type QuoteOffer = {
   deliveryType: string;
   deliveryDate: string | null;
   deliveryLabel: string | null;
+  category: "domicile" | "relais" | "express";
 };
 
 const BOXTAL_BASE = "https://www.envoimoinscher.com/api/v1";
@@ -54,6 +55,18 @@ function decodeXml(value: string): string {
     .replace(/&gt;/g, ">");
 }
 
+function categorizeOffer(
+  deliveryType: string,
+  carrier: string,
+  service: string,
+  label: string
+): "domicile" | "relais" | "express" {
+  if (deliveryType === "PICKUP_POINT") return "relais";
+  const text = `${carrier} ${service} ${label}`.toLowerCase();
+  if (/express/.test(text)) return "express";
+  return "domicile";
+}
+
 function parseOffers(xml: string): QuoteOffer[] {
   const blocks = Array.from(xml.matchAll(/<offer>([\s\S]*?)<\/offer>/g)).map((match) => match[1]);
   return blocks
@@ -73,6 +86,12 @@ function parseOffers(xml: string): QuoteOffer[] {
         deliveryType: tag(deliveryTypeBlock, "code"),
         deliveryDate: tag(deliveryBlock, "date") || null,
         deliveryLabel: decodeXml(tag(deliveryBlock, "label")) || null,
+        category: categorizeOffer(
+          tag(deliveryTypeBlock, "code"),
+          decodeXml(tag(operatorBlock, "label")),
+          tag(serviceBlock, "code"),
+          decodeXml(tag(serviceBlock, "label"))
+        ),
       };
     })
     .filter((offer) => offer.operator && offer.service && Number.isFinite(offer.price) && offer.price > 0);
@@ -153,19 +172,25 @@ export async function POST(req: Request) {
   }
 
   const offers = parseOffers(xml);
-  const homeOffers = offers.filter((offer) => offer.deliveryType === "HOME");
-  const list = (homeOffers.length ? homeOffers : offers).sort((a, b) => a.price - b.price);
   const unique: QuoteOffer[] = [];
   const seen = new Set<string>();
-  for (const offer of list) {
+  // Keep all delivery modes (home + pickup point) so the customer can choose.
+  for (const offer of offers.sort((a, b) => a.price - b.price)) {
     const key = `${offer.operator}:${offer.service}`;
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(offer);
-    if (unique.length >= 6) break;
   }
+  // Ensure each category is represented: prefer cheapest per category first.
+  const ordered: QuoteOffer[] = [];
+  const byCategory = (cat: QuoteOffer["category"]) =>
+    unique.filter((offer) => offer.category === cat).sort((a, b) => a.price - b.price);
+  for (const cat of ["domicile", "relais", "express"] as const) {
+    ordered.push(...byCategory(cat));
+  }
+  const final = ordered.length ? ordered : unique;
 
-  if (unique.length === 0) {
+  if (final.length === 0) {
     return NextResponse.json(
       { error: "No shipping options are available for this address" },
       { status: 404 }
@@ -173,7 +198,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({
-    offers: unique,
+    offers: final,
     package: pkg,
     origin: { country: SHIPPER_COUNTRY, postalCode: SHIPPER_POSTAL, city: SHIPPER_CITY },
   });
