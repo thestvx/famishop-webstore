@@ -61,6 +61,13 @@ export const cartsSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action: PayloadAction<CartItem>) => {
+      // ensure a cartId exists for legacy carts
+      if (state.cart && !state.cart.cartId) {
+        state.cart.cartId =
+          (typeof crypto !== "undefined" && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
       // if cart is empty then add
       if (state.cart === null) {
         state.cart = {
@@ -203,9 +210,17 @@ export const cartsSlice = createSlice({
     state.adjustedTotalPrice = 0;
     state.action = null;
   },
+  ensureCartId: (state) => {
+    if (state.cart && !state.cart.cartId) {
+      state.cart.cartId =
+        (typeof crypto !== "undefined" && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+  },
   },
 });
 
-export const { addToCart, removeCartItem, remove, clearCart } = cartsSlice.actions;
+export const { addToCart, removeCartItem, remove, clearCart, ensureCartId } = cartsSlice.actions;
 
 export default cartsSlice.reducer;

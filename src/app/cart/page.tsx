@@ -11,7 +11,8 @@ import { MdOutlineLocalOffer } from "react-icons/md";
 import { TbBasketExclamation } from "react-icons/tb";
 import React, { useState, useEffect } from "react";
 import { RootState } from "@/lib/store";
-import { useAppSelector } from "@/lib/hooks/redux";
+import { useAppSelector, useAppDispatch } from "@/lib/hooks/redux";
+import { ensureCartId } from "@/lib/features/carts/cartsSlice";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
@@ -20,9 +21,14 @@ export default function CartPage() {
   const { cart, totalPrice, adjustedTotalPrice } = useAppSelector(
     (state: RootState) => state.carts
   );
+  const dispatch = useAppDispatch();
   const { t, formatPrice } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (cart && !cart.cartId) dispatch(ensureCartId());
+  }, [cart, dispatch]);
 
   // Keep cartId in the URL for traceability (not sufficient for access control).
   useEffect(() => {
