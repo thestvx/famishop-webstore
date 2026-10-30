@@ -10,17 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import ProductImage from "@/components/common/ProductImage";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { cn } from "@/lib/utils";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-
-function StripeCapture({ onReady }: { onReady: (s: any, e: any) => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  useEffect(() => {
-    if (stripe && elements) onReady(stripe, elements);
-  }, [stripe, elements, onReady]);
-  return null;
-}
+// Stripe Checkout is handled via server-side session creation (hosted page).
 
 type Step = 1 | 2 | 3 | 4;
 type CountryCode = "FR" | "IT";
@@ -82,19 +72,13 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof Customer, string>>>({});
   const [offers, setOffers] = useState<ShippingOffer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<ShippingOffer | null>(null);
+  const [shippingType, setShippingType] = useState<ShippingOffer["category"] | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
-  const [stripePromise] = useState(() =>
-    loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_live_51UVweQCjlPXGToodznu3xEjj0OmQvjKTR0RiGquyJhduBOr24UEbTcNjLrcfPlYJPIodLOGmg7FhoOtDawTogXGs00MtbuV6DY")
-  );
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [stripeInstance, setStripeInstance] = useState<any>(null);
-  const [elementsInstance, setElementsInstance] = useState<any>(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const items = useMemo(() => cart?.items || [], [cart?.items]);
   const shippingFee = selectedOffer?.price || 0;
@@ -122,41 +106,6 @@ export default function CheckoutPage() {
 
   const total = subtotal + shippingFee;
 
-  // Reset client secret when switching away from card.
-  useEffect(() => {
-    if (paymentMethod !== "stripe") setClientSecret(null);
-  }, [paymentMethod]);
-
-  // Create a PaymentIntent when the customer reaches the payment step with card.
-  useEffect(() => {
-    if (step !== 4 || paymentMethod !== "stripe" || clientSecret) return;
-    let active = true;
-    setPaymentLoading(true);
-    (async () => {
-      try {
-        const res = await fetch("/api/stripe/payment-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: Math.round(total * 100),
-            currency: (window.localStorage.getItem("famishop-currency") || "EUR").toLowerCase(),
-            metadata: { orderTotal: total.toFixed(2) },
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Payment setup failed");
-        if (active) setClientSecret(data.clientSecret);
-      } catch (e: any) {
-        if (active) setSubmitError(e?.message || "Payment setup failed");
-      } finally {
-        if (active) setPaymentLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [step, paymentMethod, clientSecret, total]);
-
   const loadShipping = useCallback(
     async (target: Customer) => {
       setShippingLoading(true);
@@ -179,7 +128,12 @@ export default function CheckoutPage() {
         const list: ShippingOffer[] = Array.isArray(data?.offers) ? data.offers : [];
         if (list.length === 0) throw new Error(t("checkout.shippingNoOptions"));
         setOffers(list);
-        setSelectedOffer(list[0]);
+        const firstType = (["domicile", "relais", "express"] as const).find((cat) =>
+          list.some((o) => o.category === cat)
+        );
+        setShippingType(firstType || list[0].category);
+        const firstInType = list.find((o) => o.category === (firstType || list[0].category));
+        setSelectedOffer(firstInType || list[0]);
       } catch (e: any) {
         setShippingError(e?.message || t("checkout.shippingError"));
       } finally {
@@ -222,12 +176,6 @@ export default function CheckoutPage() {
 
   const handleSubmit = async () => {
     setSubmitError(null);
-    if (paymentMethod === "stripe") {
-      if (!stripeInstance || !elementsInstance || !clientSecret) {
-        setSubmitError(t("checkout.paymentNotReady"));
-        return;
-      }
-    }
     setSubmitting(true);
     try {
       const payload = {
@@ -254,29 +202,28 @@ export default function CheckoutPage() {
           : null,
         payment: {
           method: paymentMethod === "stripe" ? "stripe" : "cash_on_delivery",
-          status: paymentMethod === "stripe" ? "paid" : "pending",
+          status: "pending",
           reference: null,
         },
       };
 
-      // Confirm card payment with Stripe before creating the order.
-      if (paymentMethod === "stripe") {
-        const { error: stripeError, paymentIntent } = await stripeInstance.confirmPayment({
-          elements: elementsInstance,
-          confirmParams: {
-            return_url: `${window.location.origin}/checkout/success/`,
-          },
-          redirect: "if_required",
+      // COD: create order directly.
+      if (paymentMethod === "cod") {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
-        if (stripeError) {
-          throw new Error(stripeError.message || t("checkout.paymentFailed"));
-        }
-        if (!paymentIntent || paymentIntent.status !== "succeeded") {
-          throw new Error(t("checkout.paymentFailed"));
-        }
-        payload.payment.reference = paymentIntent.id;
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Order failed");
+        setOrderPlaced(true);
+        dispatch(clearCart());
+        router.push(`/checkout/success/?orderId=${data.orderId}`);
+        return;
       }
-      const res = await fetch("/api/orders", {
+
+      // Stripe: create Checkout Session and redirect to hosted payment page.
+      const res = await fetch("/api/stripe/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -285,7 +232,11 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(data?.error || "Order failed");
       setOrderPlaced(true);
       dispatch(clearCart());
-      router.push(`/checkout/success/?orderId=${data.orderId}`);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        router.push(`/checkout/success/?orderId=${data.orderId}`);
+      }
     } catch (e: any) {
       setSubmitError(e?.message || t("checkout.orderFailed"));
     } finally {
@@ -445,58 +396,77 @@ export default function CheckoutPage() {
                 )}
                 {!shippingLoading && !shippingError && offers.length > 0 && (
                   <>
+                    <div className="text-sm text-black/60 mb-2">{t("checkout.shippingTypePrompt")}</div>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {(["domicile", "relais", "express"] as const).map((cat) => {
+                        const group = offers.filter((o) => o.category === cat);
+                        if (group.length === 0) return null;
+                        const cheapest = group.reduce((a, b) => (a.price < b.price ? a : b));
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setShippingType(cat);
+                              const first = offers.find((o) => o.category === cat);
+                              if (first) setSelectedOffer(first);
+                            }}
+                            className={cn(
+                              "p-3 rounded-xl border text-sm font-medium transition",
+                              shippingType === cat ? "border-black bg-black text-white" : "border-black/10 bg-white"
+                            )}
+                          >
+                            <div>{t(`checkout.shippingCategory.${cat}`)}</div>
+                            <div className="text-xs opacity-80">
+                              {t("checkout.fromPrice")} {formatPrice(cheapest.price)}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                     <div className="text-sm text-black/60 mb-2">{t("checkout.shippingSelectPrompt")}</div>
-                    {(["domicile", "relais", "express"] as const).map((cat) => {
-                      const group = offers.filter((offer) => offer.category === cat);
-                      if (group.length === 0) return null;
-                      return (
-                        <div key={cat} className="space-y-2">
-                          <div className="text-xs font-bold tracking-wide text-black/50 pt-2">
-                            {t(`checkout.shippingCategory.${cat}`)}
-                          </div>
-                          {group.map((offer) => {
-                            const key = `${offer.operator}:${offer.service}`;
-                            return (
-                              <label
-                                key={key}
-                                className={cn(
-                                  "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition",
-                                  selectedOffer &&
-                                    selectedOffer.operator === offer.operator &&
-                                    selectedOffer.service === offer.service
-                                    ? "border-black"
-                                    : "border-black/10"
-                                )}
-                              >
-                                <input
-                                  type="radio"
-                                  name="shipping"
-                                  value={key}
-                                  checked={
-                                    !!selectedOffer &&
-                                    selectedOffer.operator === offer.operator &&
-                                    selectedOffer.service === offer.service
-                                  }
-                                  onChange={() => setSelectedOffer(offer)}
-                                />
-                                <div>
-                                  <div className="font-medium">
-                                    {offer.carrier} - {offer.label}
-                                  </div>
-                                  <div className="text-sm text-black/50">
-                                    {offer.deliveryLabel || t("checkout.deliveryHome")}
-                                    {offer.deliveryDate
-                                      ? ` · ${t("checkout.deliveryEstimate")}: ${formatDeliveryDate(offer.deliveryDate)}`
-                                      : ""}
-                                  </div>
-                                </div>
-                                <span className="ml-auto font-bold">{formatPrice(offer.price)}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
+                    {offers
+                      .filter((o) => o.category === shippingType)
+                      .map((offer) => {
+                        const key = `${offer.operator}:${offer.service}`;
+                        return (
+                          <label
+                            key={key}
+                            className={cn(
+                              "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition mb-2",
+                              selectedOffer &&
+                                selectedOffer.operator === offer.operator &&
+                                selectedOffer.service === offer.service
+                                ? "border-black"
+                                : "border-black/10"
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              name="shipping"
+                              value={key}
+                              checked={
+                                !!selectedOffer &&
+                                selectedOffer.operator === offer.operator &&
+                                selectedOffer.service === offer.service
+                              }
+                              onChange={() => setSelectedOffer(offer)}
+                            />
+                            <div>
+                              <div className="font-medium">
+                                {offer.carrier} - {offer.label}
+                              </div>
+                              <div className="text-sm text-black/50">
+                                {offer.deliveryLabel || t("checkout.deliveryHome")}
+                                {offer.deliveryDate
+                                  ? ` · ${t("checkout.deliveryEstimate")}: ${formatDeliveryDate(offer.deliveryDate)}`
+                                  : ""}
+                              </div>
+                            </div>
+                            <span className="ml-auto font-bold">{formatPrice(offer.price)}</span>
+                          </label>
+                        );
+                      })}
                   </>
                 )}
               </div>
@@ -504,6 +474,16 @@ export default function CheckoutPage() {
 
             {step === 3 && (
               <div className="space-y-4">
+                <div className="rounded-xl border border-black/10 p-4 text-sm space-y-1">
+                  <div className="font-medium mb-1">{t("checkout.customerDetails")}</div>
+                  <div>
+                    {customer.firstName} {customer.lastName}
+                  </div>
+                  <div className="text-black/60">{customer.email} · {phonePrefix}{nationalDigits(customer.phone, customer.country)}</div>
+                  <div className="text-black/60">
+                    {customer.address}, {customer.postalCode} {customer.city}, {COUNTRY_NAME[customer.country]}
+                  </div>
+                </div>
                 {items.map((item, idx) => {
                   const title = getLocalizedProductTitle({ ...item, title: item.name, srcUrl: item.srcUrl, price: item.price, discount: item.discount, rating: 0 } as any, locale) || item.name;
                   return (
@@ -578,19 +558,8 @@ export default function CheckoutPage() {
                   </div>
                 </label>
                 {paymentMethod === "stripe" && (
-                  <div className="p-4 border border-black/10 rounded-xl space-y-3">
-                    {paymentLoading && (
-                      <div className="text-sm text-black/50">{t("checkout.paymentLoading")}</div>
-                    )}
-                    {!paymentLoading && clientSecret && stripePromise && (
-                      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
-                        <StripeCapture onReady={(s, e) => { setStripeInstance(s); setElementsInstance(e); }} />
-                        <PaymentElement />
-                      </Elements>
-                    )}
-                    {!paymentLoading && !clientSecret && submitError && (
-                      <div className="text-sm text-red-500">{submitError}</div>
-                    )}
+                  <div className="p-4 border border-black/10 rounded-xl text-sm text-black/60">
+                    {t("checkout.stripeRedirectNote")}
                   </div>
                 )}
                 {submitError && <div className="text-sm text-red-500">{submitError}</div>}
