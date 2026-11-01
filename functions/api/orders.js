@@ -296,14 +296,16 @@ async function resolveShippingBase(input) {
         price: Number(xmlTag(priceBlock, "tax-inclusive") || 0),
       };
     });
-    const home = offers.filter((offer) => offer.deliveryType === "HOME" && offer.price > 0);
-    const pool = home.length ? home : offers.filter((offer) => offer.price > 0);
-    if (pool.length === 0) throw new Error("No shipping options are available");
-    const selected = pool.find(
+    const allOffers = offers.filter((offer) => offer.price > 0);
+    const selectedOffer = allOffers.find(
       (offer) =>
         offer.operator === input.selected?.operator && offer.service === input.selected?.service
     );
-    const chosen = selected || pool.sort((a, b) => a.price - b.price)[0];
+    if (selectedOffer) return round(selectedOffer.price);
+    const home = allOffers.filter((offer) => offer.deliveryType === "HOME");
+    const pool = home.length ? home : allOffers;
+    if (pool.length === 0) throw new Error("No shipping options are available");
+    const chosen = pool.sort((a, b) => a.price - b.price)[0];
     return round(chosen.price);
   } catch (e) {
     throw e instanceof Error ? e : new Error("Shipping quote failed");
