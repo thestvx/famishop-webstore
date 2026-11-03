@@ -10,6 +10,11 @@ import StorefrontShell from "@/components/layout/StorefrontShell";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev"),
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
   title: "Famishop",
   description: "FamiShop - متجر إلكتروني للأزياء والملابس",
   openGraph: {
