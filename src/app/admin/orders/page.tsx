@@ -41,6 +41,33 @@ export default function AdminOrdersPage() {
     setDeleting(true);
     setMessage(null);
     try {
+      // Restore stock if needed (idempotent)
+      const { data: raw } = await supabase.from("orders").select("customer,items").eq("id", toDelete.id).single();
+      let customer: any = {};
+      try {
+        customer = typeof raw?.customer === "string" ? JSON.parse(raw.customer) : raw?.customer || {};
+      } catch {
+        customer = {};
+      }
+      const items = Array.isArray(raw?.items) ? raw.items : toDelete.items;
+      if (customer?.inventoryDeducted && !customer?.inventoryRestored) {
+        for (const item of items || []) {
+          const pid = Number(item.id);
+          const qty = Number(item.quantity) || 0;
+          if (!Number.isFinite(pid) || qty <= 0) continue;
+          // restore
+          const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
+          const cur = prod?.stock;
+          if (cur != null) {
+            await supabase.from("products").update({ stock: Number(cur) + qty }).eq("id", pid);
+          }
+        }
+        try {
+          const updated = { ...customer, inventoryRestored: true };
+          await supabase.from("orders").update({ customer: JSON.stringify(updated) }).eq("id", toDelete.id);
+        } catch {}
+      }
+
       const { error } = await supabase.from("orders").delete().eq("id", toDelete.id);
       if (error) throw error;
       setOrders((prev) => prev.filter((o) => o.id !== toDelete.id));

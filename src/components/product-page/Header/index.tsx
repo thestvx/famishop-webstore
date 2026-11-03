@@ -91,7 +91,14 @@ const Header = ({ data }: { data: Product }) => {
           <hr className="h-[1px] border-t-black/10 my-5" />
           <SizeSelection sizes={data.size ? data.size.split(/[,/|]/).map((s) => s.trim()).filter(Boolean) : []} />
           <hr className="hidden md:block h-[1px] border-t-black/10 my-5" />
-          <AddToCardSection data={data} />
+           <div className="mb-3 text-sm font-medium">
+             {data.stock === 0
+               ? t("product.outOfStock")
+               : data.stock != null && data.stock <= 10
+               ? t("product.onlyLeft").replace("{count}", String(data.stock))
+               : t("product.inStock")}
+           </div>
+           <AddToCardSection data={data} />
         </div>
       </div>
     </>

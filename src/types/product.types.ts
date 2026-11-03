@@ -8,6 +8,7 @@ export type PriceMap = {
   EUR?: number | null;
   DZD?: number | null;
   weightKg?: number | null;
+  countryOfOrigin?: string | null;
 };
 
 export type Product = {
@@ -38,4 +39,5 @@ export type Product = {
   stock?: number | null;
   status?: string | null;
   prices?: PriceMap | null;
+  countryOfOrigin?: string | null;
 };

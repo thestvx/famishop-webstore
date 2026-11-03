@@ -30,9 +30,9 @@ type UploadedImage = {
   error?: string;
 };
 
-const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-const SHOE_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45"];
-const HAT_SIZES = ["One Size", "54", "55", "56", "57", "58", "59", "60"];
+const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Standard"];
+const SHOE_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "Standard"];
+const HAT_SIZES = ["One Size", "54", "55", "56", "57", "58", "59", "60", "Standard"];
 const AGE_SIZES = ["0-3 months", "3-6 months", "6-9 months", "9-12 months", "1-2 years", "2-3 years", "3-4 years", "4-5 years", "5-6 years", "6-7 years", "7-8 years", "8-9 years", "9-10 years", "10-11 years", "11-12 years", "12-13 years", "13-14 years", "14-15 years", "15-16 years"];
 
 const COLORS = [
@@ -49,6 +49,7 @@ const COLORS = [
   { name: "Blue", hex: "#3B82F6" },
   { name: "Navy", hex: "#1E3A8A" },
   { name: "Purple", hex: "#A855F7" },
+  { name: "Multicolor", hex: "linear-gradient(90deg,#ef4444,#eab308,#22c55e,#3b82f6,#a855f7)" },
 ];
 
 const MATERIALS = [
@@ -82,7 +83,7 @@ const CONDITIONS = [
   { value: "satisfactory", titleKey: "cond.satisfactory", descKey: "cond.satisfactoryDesc" },
 ];
 
-const BRANDS = ["Versace", "Zara", "Gucci", "Prada", "Calvin Klein", "Mayoral", "H&M", "Okaidi", "Chicco", "Kiabi"];
+const BRANDS = ["Sans marque", "Versace", "Zara", "Gucci", "Prada", "Calvin Klein", "Mayoral", "H&M", "Okaidi", "Chicco", "Kiabi"];
 
 const DESC_LANGS = [
   { code: "en", label: "English" },
@@ -230,7 +231,11 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const price = priceEur || priceUsd || priceDzd;
   const [packageSize, setPackageSize] = useState("");
   const [stock, setStock] = useState("");
+  const [stockInput, setStockInput] = useState("");
+  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [stockError, setStockError] = useState("");
   const [weightKg, setWeightKg] = useState("");
+  const [countryOfOrigin, setCountryOfOrigin] = useState("");
 
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -304,6 +309,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           setMaterials(Array.isArray(data.materials) ? data.materials : []);
           setPackageSize(data.package_size || "");
           setStock(data.stock != null ? String(data.stock) : "");
+          if (data.country_of_origin != null) setCountryOfOrigin(String(data.country_of_origin));
+          else if (data.countryOfOrigin != null) setCountryOfOrigin(String(data.countryOfOrigin));
+          else if (data.prices && (data.prices as any).countryOfOrigin != null) setCountryOfOrigin(String((data.prices as any).countryOfOrigin));
+          else setCountryOfOrigin("");
           if (data.weight_kg != null) setWeightKg(String(data.weight_kg));
           else if (data.weight_grams != null) setWeightKg(String(Number(data.weight_grams) / 1000));
           else if (data.weightKg != null) setWeightKg(String(data.weightKg));
@@ -574,8 +583,9 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         prices: {
           USD: priceUsd ? Number(priceUsd) : null,
           EUR: priceEur ? Number(priceEur) : null,
-          DZD: priceDzd ? Number(priceDzd) : null,
+          DZD: null,
           weightKg: weightKg.trim() ? Number(weightKg) : null,
+          countryOfOrigin: countryOfOrigin || null,
         },
         src_url: primaryUrl,
         gallery: urls,
@@ -590,6 +600,8 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         materials,
         package_size: packageSize || null,
         stock: stock ? Number(stock) : null,
+        country_of_origin: countryOfOrigin || null,
+        countryOfOrigin: countryOfOrigin || null,
         weight_grams: weightKg.trim() ? Math.round(Number(weightKg) * 1000) : null,
         weight_kg: weightKg.trim() ? Number(weightKg) : null,
         weightKg: weightKg.trim() ? Number(weightKg) : null,
@@ -766,7 +778,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               <button key={c.name} onClick={() => toggle(c.name)} className="flex flex-col items-center gap-1">
                 <span
                   className={`w-12 h-12 rounded-full border-2 ${colors.includes(c.name) ? "border-black" : "border-black/10"}`}
-                  style={{ backgroundColor: c.hex }}
+                  style={{ background: c.hex }}
                 />
                 <span className="text-xs">{t(`color.${c.name}`)}</span>
               </button>
@@ -778,7 +790,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               <button key={c.name} onClick={() => toggle(c.name)} className="flex flex-col items-center gap-1">
                 <span
                   className={`w-12 h-12 rounded-full border-2 ${colors.includes(c.name) ? "border-black" : "border-black/10"}`}
-                  style={{ backgroundColor: c.hex }}
+                  style={{ background: c.hex }}
                 />
                 <span className="text-xs">{t(`color.${c.name}`)}</span>
               </button>
@@ -917,20 +929,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               className="w-full text-center text-2xl font-semibold px-4 py-3 rounded-xl border border-black/10"
             />
           </div>
-          <div>
-            <label className="text-sm text-black/50 mb-1 block">DZD (د.ج)</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={priceDzd}
-              onChange={(e) => {
-                setPriceDzd(e.target.value);
-                markDirty();
-              }}
-              placeholder="0.00"
-              className="w-full text-center text-2xl font-semibold px-4 py-3 rounded-xl border border-black/10"
-            />
-          </div>
+
         </div>
         <BottomBar>
           <button
@@ -1182,10 +1181,11 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           <Row label={t("addProduct.material")} value={materials.map((m) => t(`material.${m}`)).join(", ")} onClick={() => setView("material")} />
           <Row label={t("addProduct.price")} value={[priceUsd && `${priceUsd} USD`, priceEur && `${priceEur} EUR`, priceDzd && `${priceDzd} DZD`].filter(Boolean).join(" / ")} onClick={() => setView("price")} />
           <Row label={t("addProduct.packageSize")} value={packageSize ? t(`pkg.${packageSize}`) : ""} onClick={() => setView("package")} />
-          <Row label={t("addProduct.stock")} value={stock} onClick={() => {
-            const next = window.prompt(t("addProduct.stock"), stock);
-            if (next !== null) { setStock(next.trim()); markDirty(); }
-          }} />
+           <Row label={t("addProduct.stock")} value={stock} onClick={() => {
+             setStockInput(stock);
+             setStockError("");
+             setStockModalOpen(true);
+           }} />
         </section>
 
         <section className="mb-6 bg-white rounded-2xl border border-black/10 p-4">
@@ -1206,6 +1206,75 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           />
           <p className="text-xs text-black/50 mt-2">0.250 = 250 g. {t("addProduct.productWeightHint")}</p>
         </section>
+
+        <section className="mb-6 bg-white rounded-2xl border border-black/10 p-4">
+          <h2 className="text-sm font-semibold text-black/70 mb-3">Pays d'origine / Country of Origin</h2>
+          <select
+            value={countryOfOrigin}
+            onChange={(e) => {
+              setCountryOfOrigin(e.target.value);
+              markDirty();
+            }}
+            className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white"
+          >
+            <option value="">--</option>
+            <option value="China">صنع في الصين — Made in China</option>
+            <option value="Turkey">صنع في تركيا — Made in Turkey</option>
+            <option value="Spain">صنع في إسبانيا — Made in Spain</option>
+            <option value="France">صنع في فرنسا — Made in France</option>
+            <option value="USA">صنع في أمريكا — Made in USA</option>
+          </select>
+        </section>
+
+        {stockModalOpen && (
+          <div
+            className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setStockModalOpen(false);
+            }}
+          >
+            <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold">{t("addProduct.stock")}</h3>
+                <button onClick={() => setStockModalOpen(false)} className="p-1.5 rounded hover:bg-gray-100" aria-label="close">
+                  <X size={16} />
+                </button>
+              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={stockInput}
+                onChange={(e) => setStockInput(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-black/10"
+                placeholder="0"
+              />
+              {stockError && <p className="text-xs text-red-500 mt-2">{stockError}</p>}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setStockModalOpen(false)}
+                  className="flex-1 px-4 py-2 rounded-lg border border-black/10 text-sm"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  onClick={() => {
+                    const next = stockInput.trim();
+                    if (next && (!Number.isFinite(Number(next)) || Number(next) < 0)) {
+                      setStockError("Invalid stock");
+                      return;
+                    }
+                    setStock(next);
+                    setStockModalOpen(false);
+                    markDirty();
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg bg-black text-white text-sm"
+                >
+                  {t("common.confirm")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {msg && <p className="text-sm text-black/70 mb-4">{msg}</p>}
 

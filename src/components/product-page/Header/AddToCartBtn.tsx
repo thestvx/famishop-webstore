@@ -19,7 +19,10 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
 
   const title = getLocalizedProductTitle(data, locale) || t("product.untitled");
 
+  const outOfStock = data.stock === 0;
   const handleClick = () => {
+    if (outOfStock) return;
+    if (data.stock != null && data.quantity > data.stock) return;
     setAnimating(true);
     dispatch(
       addToCart({
@@ -44,7 +47,7 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
 
   return (
     <motion.button
-      type="button"
+      disabled={outOfStock}
       whileTap={{ scale: 0.96 }}
       animate={animating ? { scale: [1, 1.06, 1] } : { scale: 1 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
@@ -56,7 +59,7 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="inline-block"
       >
-        {t("product.addToCart")}
+        {outOfStock ? t("product.outOfStock") : t("product.addToCart")}
       </motion.span>
     </motion.button>
   );

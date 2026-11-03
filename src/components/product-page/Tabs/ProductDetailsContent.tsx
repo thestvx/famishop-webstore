@@ -9,6 +9,7 @@ const ProductDetailsContent = ({ data }: { data: Product | null }) => {
 
   if (data?.categoryPath) rows.push({ label: t("product.categoryPath"), value: data.categoryPath });
   if (data?.brand) rows.push({ label: t("addProduct.brand"), value: data.brand });
+  if (data?.countryOfOrigin) rows.push({ label: "Pays d'origine / Country of Origin", value: `Made in ${data.countryOfOrigin}` });
   if (data?.size) rows.push({ label: t("addProduct.size"), value: data.size });
   if (data?.condition) rows.push({ label: t("addProduct.condition"), value: t(`cond.${data.condition}`) });
   if (data?.colors?.length) rows.push({ label: t("addProduct.colors"), value: data.colors.map((c) => t(`color.${c}`)).join(", ") });

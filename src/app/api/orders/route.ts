@@ -172,6 +172,25 @@ async function persistOrder(payload: Record<string, any>) {
   throw new Error("Could not create order: database schema mismatch");
 }
 
+async function adjustStock(productId: number, delta: number): Promise<boolean> {
+  if (!supabase) return false;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: product } = await supabase.from("products").select("stock").eq("id", productId).maybeSingle();
+    const current = product?.stock;
+    if (current == null) return true; // no stock tracking
+    const next = Number(current) + delta;
+    if (delta < 0 && next < 0) return false;
+    const { data, error } = await supabase
+      .from("products")
+      .update({ stock: next })
+      .eq("id", productId)
+      .eq("stock", current)
+      .select("id");
+    if (!error && Array.isArray(data) && data.length > 0) return true;
+  }
+  return false;
+}
+
 export async function POST(req: Request) {
   if (!isSupabaseConfigured() || !supabase) {
     return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
@@ -350,10 +369,42 @@ export async function POST(req: Request) {
     customer: JSON.stringify(customerSnapshot),
   };
 
+  let orderId: number | null = null;
   try {
-    const orderId = await persistOrder(payload);
-    return NextResponse.json({ orderId, total, currency });
+    orderId = await persistOrder(payload);
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to create order" }, { status: 500 });
   }
+
+  // Decrement stock (atomic-ish) for all items.
+  const deducted: number[] = [];
+  let stockOk = true;
+  for (const item of items) {
+    const ok = await adjustStock(Number(item.id), -Number(item.quantity));
+    if (!ok) {
+      stockOk = false;
+      break;
+    }
+    deducted.push(Number(item.id));
+  }
+  if (!stockOk) {
+    // restore already deducted
+    for (const id of deducted) {
+      const item = items.find((i: any) => Number(i.id) === id);
+      if (item) await adjustStock(id, Number(item.quantity));
+    }
+    // remove order
+    try {
+      await supabase.from("orders").delete().eq("id", orderId);
+    } catch {}
+    return NextResponse.json({ error: "Insufficient stock" }, { status: 409 });
+  }
+
+  // mark inventory deducted in customer JSON
+  try {
+    const updatedCustomer = { ...customerSnapshot, inventoryDeducted: true, inventoryRestored: false };
+    await supabase.from("orders").update({ customer: JSON.stringify(updatedCustomer) }).eq("id", orderId);
+  } catch {}
+
+  return NextResponse.json({ orderId, total, currency });
 }
