@@ -9,8 +9,25 @@ import FirebaseAnalytics from "@/components/common/FirebaseAnalytics";
 import StorefrontShell from "@/components/layout/StorefrontShell";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev"),
   title: "Famishop",
-  description: "Famishop webstore",
+  description: "FamiShop - متجر إلكتروني للأزياء والملابس",
+  icons: {
+    icon: "/images/Famishoplogo.png",
+    shortcut: "/images/Famishoplogo.png",
+    apple: "/images/Famishoplogo.png",
+  },
+  openGraph: {
+    title: "Famishop",
+    description: "FamiShop - متجر إلكتروني للأزياء والملابس",
+    images: ["/images/Famishoplogo.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Famishop",
+    description: "FamiShop - متجر إلكتروني للأزياء والملابس",
+    images: ["/images/Famishoplogo.png"],
+  },
 };
 
 export const viewport: Viewport = {
