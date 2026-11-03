@@ -81,13 +81,15 @@ const Footer = () => {
               </p>
               <div className="flex items-center">
                 {socialsData.map((social) => (
-                  <Link
-                    href={social.url}
-                    key={social.id}
-                    className="bg-white hover:bg-black hover:text-white transition-all mr-3 w-7 h-7 rounded-full border border-black/20 flex items-center justify-center p-1.5"
-                  >
-                    {social.icon}
-                  </Link>
+                    <Link
+                      href={social.url}
+                      key={social.id}
+                      className="group bg-white hover:bg-black hover:text-white transition-all mr-3 w-7 h-7 rounded-full border border-black/20 flex items-center justify-center p-1.5"
+                    >
+                      {React.isValidElement(social.icon) && social.icon.type === Image
+                        ? React.cloneElement(social.icon as any, { className: "group-hover:invert transition" })
+                        : social.icon}
+                    </Link>
                 ))}
               </div>
             </div>
