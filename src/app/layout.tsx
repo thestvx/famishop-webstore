@@ -16,16 +16,16 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   title: "Famishop",
-  description: "FamiShop - متجر إلكتروني للأزياء والملابس",
+  description: "FamiShop - Boutique en ligne de mode et vêtements",
   openGraph: {
     title: "Famishop",
-    description: "FamiShop - متجر إلكتروني للأزياء والملابس",
+    description: "FamiShop - Boutique en ligne de mode et vêtements",
     images: ["/images/Famishoplogo02.png?v=2"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Famishop",
-    description: "FamiShop - متجر إلكتروني للأزياء والملابس",
+    description: "FamiShop - Boutique en ligne de mode et vêtements",
     images: ["/images/Famishoplogo02.png?v=2"],
   },
 };
