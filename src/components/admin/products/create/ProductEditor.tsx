@@ -18,6 +18,7 @@ type View =
   | "color"
   | "material"
   | "brand"
+  | "origin"
   | "price"
   | "package";
 
@@ -84,6 +85,26 @@ const CONDITIONS = [
 ];
 
 const BRANDS = ["Sans marque", "Versace", "Zara", "Gucci", "Prada", "Calvin Klein", "Mayoral", "H&M", "Okaidi", "Chicco", "Kiabi"];
+
+const ORIGIN_OPTIONS: { code: string; labels: Record<string, string> }[] = [
+  { code: "CN", labels: { en: "Made in China", fr: "Fabriqué en Chine", it: "Prodotto in Cina" } },
+  { code: "TR", labels: { en: "Made in Turkey", fr: "Fabriqué en Turquie", it: "Prodotto in Turchia" } },
+  { code: "ES", labels: { en: "Made in Spain", fr: "Fabriqué en Espagne", it: "Prodotto in Spagna" } },
+  { code: "FR", labels: { en: "Made in France", fr: "Fabriqué en France", it: "Prodotto in Francia" } },
+  { code: "US", labels: { en: "Made in USA", fr: "Fabriqué aux États-Unis", it: "Prodotto negli Stati Uniti" } },
+];
+
+function originTitle(locale: string) {
+  if (locale === "fr") return "Pays d'origine";
+  if (locale === "it") return "Paese di origine";
+  return "Country of Origin";
+}
+
+function originLabel(code: string, locale: string) {
+  const opt = ORIGIN_OPTIONS.find((o) => o.code === code);
+  if (!opt) return code;
+  return opt.labels[locale] || opt.labels.en;
+}
 
 const DESC_LANGS = [
   { code: "en", label: "English" },
@@ -309,10 +330,16 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           setMaterials(Array.isArray(data.materials) ? data.materials : []);
           setPackageSize(data.package_size || "");
           setStock(data.stock != null ? String(data.stock) : "");
-          if (data.country_of_origin != null) setCountryOfOrigin(String(data.country_of_origin));
-          else if (data.countryOfOrigin != null) setCountryOfOrigin(String(data.countryOfOrigin));
-          else if (data.prices && (data.prices as any).countryOfOrigin != null) setCountryOfOrigin(String((data.prices as any).countryOfOrigin));
-          else setCountryOfOrigin("");
+          const rawOrigin =
+            data.country_of_origin != null
+              ? String(data.country_of_origin)
+              : data.countryOfOrigin != null
+              ? String(data.countryOfOrigin)
+              : data.prices && (data.prices as any).countryOfOrigin != null
+              ? String((data.prices as any).countryOfOrigin)
+              : "";
+          const legacyMap: Record<string, string> = { China: "CN", Turkey: "TR", Spain: "ES", France: "FR", USA: "US" };
+          setCountryOfOrigin(legacyMap[rawOrigin] || rawOrigin);
           if (data.weight_kg != null) setWeightKg(String(data.weight_kg));
           else if (data.weight_grams != null) setWeightKg(String(Number(data.weight_grams) / 1000));
           else if (data.weightKg != null) setWeightKg(String(data.weightKg));
@@ -888,6 +915,30 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     );
   }
 
+  if (view === "origin") {
+    const opts = ORIGIN_OPTIONS.map((o) => ({ code: o.code, label: o.labels[locale] || o.labels.en }));
+    return (
+      <ScreenShell ref={topRef} title={originTitle(locale)} onBack={() => setView("main")}>
+        <div className="p-2">
+          {opts.map((o) => (
+            <button
+              key={o.code}
+              onClick={() => {
+                setCountryOfOrigin(o.code);
+                setView("main");
+                markDirty();
+              }}
+              className={`w-full flex items-center justify-between px-4 py-4 border-b border-black/5 text-left ${countryOfOrigin === o.code ? "bg-black text-white" : "hover:bg-[#F5F5F5]"}`}
+            >
+              <span>{o.label}</span>
+              {countryOfOrigin === o.code && <Check size={16} />}
+            </button>
+          ))}
+        </div>
+      </ScreenShell>
+    );
+  }
+
   if (view === "price") {
     return (
       <ScreenShell ref={topRef} title={t("addProduct.price")} onBack={() => setView("main")}>
@@ -1173,8 +1224,9 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         {/* Details rows */}
         <section className="mb-6 bg-white rounded-2xl border border-black/10 overflow-hidden">
           <h2 className="text-sm font-semibold text-black/70 px-4 pt-4 mb-1">{t("addProduct.details")}</h2>
-          <Row label={t("addProduct.category")} value={categoryPathLabel || (categoryId ? categoryId : "")} onClick={() => setView("category")} />
-          <Row label={t("addProduct.brand")} value={brand} onClick={() => setView("brand")} />
+           <Row label={t("addProduct.category")} value={categoryPathLabel || (categoryId ? categoryId : "")} onClick={() => setView("category")} />
+           <Row label={originTitle(locale)} value={countryOfOrigin ? originLabel(countryOfOrigin, locale) : ""} onClick={() => setView("origin")} />
+           <Row label={t("addProduct.brand")} value={brand} onClick={() => setView("brand")} />
           <Row label={t("addProduct.size")} value={size} onClick={() => setView("size")} disabled={!categoryId} />
           <Row label={t("addProduct.condition")} value={condition ? t(`cond.${condition}`) : ""} onClick={() => setView("condition")} />
           <Row label={t("addProduct.colors")} value={colors.map((c) => t(`color.${c}`)).join(", ")} onClick={() => setView("color")} />
@@ -1207,24 +1259,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           <p className="text-xs text-black/50 mt-2">0.250 = 250 g. {t("addProduct.productWeightHint")}</p>
         </section>
 
-        <section className="mb-6 bg-white rounded-2xl border border-black/10 p-4">
-          <h2 className="text-sm font-semibold text-black/70 mb-3">Pays d'origine / Country of Origin</h2>
-          <select
-            value={countryOfOrigin}
-            onChange={(e) => {
-              setCountryOfOrigin(e.target.value);
-              markDirty();
-            }}
-            className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white"
-          >
-            <option value="">--</option>
-            <option value="China">صنع في الصين — Made in China</option>
-            <option value="Turkey">صنع في تركيا — Made in Turkey</option>
-            <option value="Spain">صنع في إسبانيا — Made in Spain</option>
-            <option value="France">صنع في فرنسا — Made in France</option>
-            <option value="USA">صنع في أمريكا — Made in USA</option>
-          </select>
-        </section>
+
 
         {stockModalOpen && (
           <div

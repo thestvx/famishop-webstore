@@ -4,12 +4,25 @@ import { Product } from "@/types/product.types";
 import ProductDetails from "./ProductDetails";
 
 const ProductDetailsContent = ({ data }: { data: Product | null }) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const rows: { label: string; value: string }[] = [];
 
+  const originLabels: Record<string, Record<string, string>> = {
+    CN: { en: "Made in China", fr: "Fabriqué en Chine", it: "Prodotto in Cina" },
+    TR: { en: "Made in Turkey", fr: "Fabriqué en Turquie", it: "Prodotto in Turchia" },
+    ES: { en: "Made in Spain", fr: "Fabriqué en Espagne", it: "Prodotto in Spagna" },
+    FR: { en: "Made in France", fr: "Fabriqué en France", it: "Prodotto in Francia" },
+    US: { en: "Made in USA", fr: "Fabriqué aux États-Unis", it: "Prodotto negli Stati Uniti" },
+  };
+  const originTitle = locale === "fr" ? "Pays d'origine" : locale === "it" ? "Paese di origine" : "Country of Origin";
+
   if (data?.categoryPath) rows.push({ label: t("product.categoryPath"), value: data.categoryPath });
+  if (data?.countryOfOrigin) {
+    const code = data.countryOfOrigin;
+    const label = originLabels[code]?.[locale] || originLabels[code]?.en || code;
+    rows.push({ label: originTitle, value: label });
+  }
   if (data?.brand) rows.push({ label: t("addProduct.brand"), value: data.brand });
-  if (data?.countryOfOrigin) rows.push({ label: "Pays d'origine / Country of Origin", value: `Made in ${data.countryOfOrigin}` });
   if (data?.size) rows.push({ label: t("addProduct.size"), value: data.size });
   if (data?.condition) rows.push({ label: t("addProduct.condition"), value: t(`cond.${data.condition}`) });
   if (data?.colors?.length) rows.push({ label: t("addProduct.colors"), value: data.colors.map((c) => t(`color.${c}`)).join(", ") });

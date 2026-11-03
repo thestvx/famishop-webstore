@@ -100,14 +100,18 @@ function normalizeProduct(row: AnyRecord): Product | null {
     colors: toStringArray(row.colors),
     materials: toStringArray(row.materials),
     packageSize: typeof row.package_size === "string" && row.package_size.trim() ? row.package_size : null,
-    countryOfOrigin:
-      row.country_of_origin != null
-        ? String(row.country_of_origin)
-        : row.countryOfOrigin != null
-        ? String(row.countryOfOrigin)
-        : prices?.countryOfOrigin != null
-        ? String(prices.countryOfOrigin)
-        : null,
+    countryOfOrigin: (() => {
+      const raw =
+        row.country_of_origin != null
+          ? String(row.country_of_origin)
+          : row.countryOfOrigin != null
+          ? String(row.countryOfOrigin)
+          : prices?.countryOfOrigin != null
+          ? String(prices.countryOfOrigin)
+          : "";
+      const legacy: Record<string, string> = { China: "CN", Turkey: "TR", Spain: "ES", France: "FR", USA: "US" };
+      return legacy[raw] || raw || null;
+    })(),
     weightGrams:
       row.weight_grams != null
         ? Number(row.weight_grams)
