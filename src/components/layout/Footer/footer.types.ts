@@ -9,7 +9,8 @@ export type SocialNetworks = {
 export type FLink = {
   id: number;
   label: string;
-  url: string;
+  url?: string;
+  key?: string;
 };
 
 export type FooterLinks = {
