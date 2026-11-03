@@ -9,9 +9,24 @@ import Link from "next/link";
 import React from "react";
 import * as motion from "framer-motion/client";
 import { useI18n } from "@/lib/i18n";
-
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useEffect, useState } from "react";
 const Header = () => {
   const { t } = useI18n();
+  const [stats, setStats] = useState({ brands: 0, products: 0, customers: 0 });
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return;
+    (async () => {
+      try {
+        const { data: products } = await supabase.from("products").select("brand");
+        const brands = new Set((products || []).map((p: any) => p.brand).filter(Boolean)).size;
+        const productsCount = (products || []).length;
+        const { data: orders } = await supabase.from("orders").select("customer_email");
+        const customers = new Set((orders || []).map((o: any) => o.customer_email).filter(Boolean)).size;
+        setStats({ brands, products: productsCount, customers });
+      } catch {}
+    })();
+  }, []);
   return (
     <header className="bg-[#F2F0F1] pt-10 md:pt-24 overflow-hidden">
       <div className="md:max-w-frame mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
@@ -59,7 +74,7 @@ const Header = () => {
           >
             <div className="flex flex-col">
               <span className="font-bold text-2xl md:text-xl lg:text-3xl xl:text-[40px] xl:mb-2">
-                <AnimatedCounter from={0} to={200} />+
+                 <AnimatedCounter from={0} to={stats.brands} />+
               </span>
               <span className="text-xs xl:text-base text-black/60 text-nowrap">
                 {t("home.internationalBrands")}
@@ -71,7 +86,7 @@ const Header = () => {
             />
             <div className="flex flex-col ml-6 md:ml-0">
               <span className="font-bold text-2xl md:text-xl lg:text-3xl xl:text-[40px] xl:mb-2">
-                <AnimatedCounter from={0} to={2000} />+
+                 <AnimatedCounter from={0} to={stats.products} />+
               </span>
               <span className="text-xs xl:text-base text-black/60 text-nowrap">
                 {t("home.highQualityProducts")}
@@ -83,7 +98,7 @@ const Header = () => {
             />
             <div className="flex flex-col w-full text-center sm:w-auto sm:text-left mt-3 sm:mt-0 sm:ml-6 md:ml-0">
               <span className="font-bold text-2xl md:text-xl lg:text-3xl xl:text-[40px] xl:mb-2">
-                <AnimatedCounter from={0} to={3000} />+
+                 <AnimatedCounter from={0} to={stats.customers} />+
               </span>
               <span className="text-xs xl:text-base text-black/60 text-nowrap">
                 {t("home.happyCustomers")}

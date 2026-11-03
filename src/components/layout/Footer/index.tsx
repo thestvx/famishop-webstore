@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { integralCF } from "@/styles/fonts";
 import React from "react";
 import { PaymentBadge, SocialNetworks } from "./footer.types";
-import { FaFacebookF, FaGithub, FaInstagram, FaTwitter } from "react-icons/fa";
+import { FaFacebookF, FaInstagram } from "react-icons/fa";
 import Link from "next/link";
 import LinksSection from "./LinksSection";
 import Image from "next/image";
@@ -15,23 +15,18 @@ import { useI18n } from "@/lib/i18n";
 const socialsData: SocialNetworks[] = [
   {
     id: 1,
-    icon: <FaTwitter />,
-    url: "https://twitter.com",
+    icon: <FaFacebookF />,
+    url: "https://www.facebook.com/people/Famishop/61582585544836",
   },
   {
     id: 2,
-    icon: <FaFacebookF />,
-    url: "https://facebook.com",
+    icon: <FaInstagram />,
+    url: "https://www.instagram.com/famishop.fr/",
   },
   {
     id: 3,
-    icon: <FaInstagram />,
-    url: "https://instagram.com",
-  },
-  {
-    id: 4,
-    icon: <FaGithub />,
-    url: "https://github.com/mohammadoftadeh",
+    icon: <Image src="/icons/whatsapp.svg" alt="WhatsApp" width={16} height={16} />,
+    url: "https://wa.me/33753135909",
   },
 ];
 
