@@ -13,20 +13,20 @@ export const metadata: Metadata = {
   title: "Famishop",
   description: "FamiShop - متجر إلكتروني للأزياء والملابس",
   icons: {
-    icon: "/images/Famishoplogo.png",
-    shortcut: "/images/Famishoplogo.png",
-    apple: "/images/Famishoplogo.png",
+    icon: "/images/Famishoplogo02.png",
+    shortcut: "/images/Famishoplogo02.png",
+    apple: "/images/Famishoplogo02.png",
   },
   openGraph: {
     title: "Famishop",
     description: "FamiShop - متجر إلكتروني للأزياء والملابس",
-    images: ["/images/Famishoplogo.png"],
+    images: ["/images/Famishoplogo02.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Famishop",
     description: "FamiShop - متجر إلكتروني للأزياء والملابس",
-    images: ["/images/Famishoplogo.png"],
+    images: ["/images/Famishoplogo02.png"],
   },
 };
 
