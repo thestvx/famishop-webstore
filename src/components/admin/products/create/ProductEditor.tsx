@@ -246,6 +246,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [condition, setCondition] = useState("");
   const [colors, setColors] = useState<string[]>([]);
   const [customColor, setCustomColor] = useState("#000000");
+  const [customColorName, setCustomColorName] = useState("");
   const [materials, setMaterials] = useState<string[]>([]);
   const [rates, setRates] = useState<{ USD: number; EUR: number; DZD: number }>({ USD: 1.08, EUR: 1, DZD: 145 });
   const [priceUsd, setPriceUsd] = useState("");
@@ -831,8 +832,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             <div className="flex flex-wrap gap-2 mb-4">
               {colors.length === 0 && <span className="text-xs text-black/50">No colors selected</span>}
               {colors.map((c) => {
+                const [namePart, hexPart] = c.includes("|") ? c.split("|") : [c, c];
                 const found = COLORS.find((x) => x.name === c);
-                const bg = found ? found.hex : c;
+                const bg = found ? found.hex : hexPart.startsWith("#") ? hexPart : "#999";
+                const label = found ? t(`color.${c}`) : namePart;
                 return (
                   <button
                     key={c}
@@ -844,7 +847,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
                     className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 text-xs"
                   >
                     <span className="w-4 h-4 rounded-full border border-black/10" style={{ background: bg }} />
-                    {found ? t(`color.${c}`) : c}
+                    {label}
                     <X size={12} />
                   </button>
                 );
@@ -853,35 +856,45 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           </div>
           <div className="p-4 border-t border-black/10">
             <div className="text-sm font-semibold mb-2">Custom color</div>
-           <div className="flex items-center gap-3">
-             <input
-               type="color"
-               value={customColor}
-               onChange={(e) => setCustomColor(e.target.value)}
-               className="w-12 h-10 rounded border border-black/10"
-             />
-             <input
-               type="text"
-               value={customColor}
-               onChange={(e) => setCustomColor(e.target.value)}
-               className="flex-1 px-3 py-2 rounded-lg border border-black/10 text-sm"
-               placeholder="#000000"
-             />
-             <button
-               type="button"
-               onClick={() => {
-                 const hex = customColor.trim();
-                 if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
-                 if (!colors.includes(hex)) {
-                   setColors((prev) => [...prev, hex]);
-                   markDirty();
-                 }
-               }}
-               className="px-4 py-2 rounded-lg bg-black text-white text-sm font-medium"
-             >
-               Add
-             </button>
-           </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-12 h-10 rounded border border-black/10"
+              />
+              <input
+                type="text"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-24 px-3 py-2 rounded-lg border border-black/10 text-sm"
+                placeholder="#000000"
+              />
+              <input
+                type="text"
+                value={customColorName}
+                onChange={(e) => setCustomColorName(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-black/10 text-sm"
+                placeholder="Color name"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const hex = customColor.trim();
+                  if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+                  const name = customColorName.trim();
+                  const value = name ? `${name}|${hex}` : hex;
+                  if (!colors.includes(value)) {
+                    setColors((prev) => [...prev, value]);
+                    markDirty();
+                  }
+                  setCustomColorName("");
+                }}
+                className="px-4 py-2 rounded-lg bg-black text-white text-sm font-medium"
+              >
+                Add
+              </button>
+            </div>
          </div>
          <BottomBar>
            <button
