@@ -23,14 +23,19 @@ const Header = ({ data }: { data: Product }) => {
           <PhotoSection data={data} />
         </div>
         <div>
-          <h1
-            className={cn([
-              integralCF.className,
-              "text-2xl md:text-[40px] md:leading-[40px] mb-3 md:mb-3.5 capitalize",
-            ])}
-          >
-            {title}
-          </h1>
+           <h1
+             className={cn([
+               integralCF.className,
+               "text-2xl md:text-[40px] md:leading-[40px] mb-3 md:mb-3.5 capitalize",
+             ])}
+           >
+             {title}
+           </h1>
+           <div className="mb-3">
+             <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-semibold animate-pulse">
+               Livraison gratuite
+             </span>
+           </div>
           <div className="flex items-center mb-3 sm:mb-3.5">
             <Rating
               initialValue={data.rating}
