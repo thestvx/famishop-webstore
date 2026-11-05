@@ -35,10 +35,15 @@ const ProductCard = ({ data }: ProductCardProps) => {
         />
       </div>
       <div className="flex flex-col flex-1">
-        <strong className="text-black xl:text-xl line-clamp-2 min-h-[2.75rem] xl:min-h-[3.25rem] leading-snug mb-1">
-          {title}
-        </strong>
-        <div className="flex items-center mb-1 xl:mb-2">
+       <strong className="text-black xl:text-xl line-clamp-2 min-h-[2.75rem] xl:min-h-[3.25rem] leading-snug mb-1">
+         {title}
+       </strong>
+       <div className="mb-1">
+         <span className="inline-block px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] sm:text-xs font-semibold animate-pulse">
+           Livraison gratuite
+         </span>
+       </div>
+       <div className="flex items-center mb-1 xl:mb-2">
           <Rating
             initialValue={rating}
             allowFraction
