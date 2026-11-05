@@ -31,7 +31,7 @@ const Header = ({ data }: { data: Product }) => {
            >
              {title}
            </h1>
-           <div className="mb-3">
+           <div className="mb-3 text-left">
              <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-semibold animate-pulse">
                Livraison gratuite
              </span>
