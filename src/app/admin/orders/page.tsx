@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { fetchOrders } from "@/lib/ordersStore";
+import { printOrderReceipt } from "@/lib/receipt";
 import { Order } from "@/types/order.types";
 import { useI18n } from "@/lib/i18n";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -116,15 +117,23 @@ export default function AdminOrdersPage() {
                   <span className="px-2 py-1 rounded-full bg-black/5">{order.status}</span>
                   <span className="ml-2 px-2 py-1 rounded-full bg-black/5">{order.paymentStatus}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setToDelete(order)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-sm hover:bg-red-50 transition"
-                  title={t("admin.deleteOrder")}
-                >
-                  <MdDeleteOutline className="text-lg" />
-                  {t("admin.deleteOrder")}
-                </button>
+                 <button
+                   type="button"
+                   onClick={() => printOrderReceipt(order)}
+                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-black/20 text-black text-sm hover:bg-black/5 transition"
+                   title="Print receipt"
+                 >
+                   Print
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => setToDelete(order)}
+                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-sm hover:bg-red-50 transition"
+                   title={t("admin.deleteOrder")}
+                 >
+                   <MdDeleteOutline className="text-lg" />
+                   {t("admin.deleteOrder")}
+                 </button>
               </div>
               <div className="text-sm mb-2">
                 <strong>{order.customerName}</strong> · {order.customerEmail} · {order.customerPhone}

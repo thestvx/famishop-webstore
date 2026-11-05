@@ -85,6 +85,13 @@ function normalizeOrder(row: AnyRecord): Order {
   };
 }
 
+export async function fetchOrder(id: number | string): Promise<Order | null> {
+  if (!isSupabaseConfigured() || !supabase) return null;
+  const { data, error } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return normalizeOrder(data);
+}
+
 export async function fetchOrders(): Promise<Order[]> {
   if (!isSupabaseConfigured() || !supabase) return [];
   const { data, error } = await supabase

@@ -6,6 +6,8 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { clearCart } from "@/lib/features/carts/cartsSlice";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { fetchOrder } from "@/lib/ordersStore";
+import { printOrderReceipt } from "@/lib/receipt";
 
 function SuccessContent() {
   const { t } = useI18n();
@@ -15,6 +17,7 @@ function SuccessContent() {
   const sessionId = params.get("session_id");
   const [status, setStatus] = useState<string | null>(null);
   const [verifying, setVerifying] = useState<boolean>(!!sessionId);
+  const [order, setOrder] = useState<any>(null);
 
   useEffect(() => {
     if (!sessionId) {
@@ -48,6 +51,11 @@ function SuccessContent() {
     };
   }, [sessionId, orderId, dispatch]);
 
+  useEffect(() => {
+    if (!orderId) return;
+    fetchOrder(Number(orderId)).then((o) => setOrder(o)).catch(() => {});
+  }, [orderId]);
+
   return (
     <main className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
       <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
@@ -60,6 +68,14 @@ function SuccessContent() {
         <p className="text-sm font-medium mb-2">
           {t("checkout.orderNumber")}: <span className="font-bold">#{orderId}</span>
         </p>
+      )}
+      {order && (
+        <button
+          onClick={() => printOrderReceipt(order)}
+          className="rounded-full bg-black text-white px-8 py-3 text-sm font-medium mb-4"
+        >
+          Print receipt
+        </button>
       )}
       {status && (
         <p className="text-sm mb-6">
