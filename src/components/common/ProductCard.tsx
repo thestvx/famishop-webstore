@@ -35,7 +35,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
         />
       </div>
       <div className="flex flex-col flex-1">
-       <strong className="text-black xl:text-xl line-clamp-2 min-h-[2.75rem] xl:min-h-[3.25rem] leading-snug mb-1">
+       <strong className="text-left text-black xl:text-xl line-clamp-2 min-h-[2.75rem] xl:min-h-[3.25rem] leading-snug mb-1">
          {title}
        </strong>
        <div className="mb-1 text-left">
