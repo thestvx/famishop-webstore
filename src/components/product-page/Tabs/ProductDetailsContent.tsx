@@ -12,6 +12,7 @@ const ProductDetailsContent = ({ data }: { data: Product | null }) => {
     TR: { en: "Made in Turkey", fr: "Fabriqué en Turquie", it: "Prodotto in Turchia" },
     ES: { en: "Made in Spain", fr: "Fabriqué en Espagne", it: "Prodotto in Spagna" },
     FR: { en: "Made in France", fr: "Fabriqué en France", it: "Prodotto in Francia" },
+    IT: { en: "Made in Italy", fr: "Fabriqué en Italie", it: "Prodotto in Italia" },
     US: { en: "Made in USA", fr: "Fabriqué aux États-Unis", it: "Prodotto negli Stati Uniti" },
   };
   const originTitle = locale === "fr" ? "Pays d'origine" : locale === "it" ? "Paese di origine" : "Country of Origin";

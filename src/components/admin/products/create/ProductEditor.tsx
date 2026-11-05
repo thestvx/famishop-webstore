@@ -91,6 +91,7 @@ const ORIGIN_OPTIONS: { code: string; labels: Record<string, string> }[] = [
   { code: "TR", labels: { en: "Made in Turkey", fr: "Fabriqué en Turquie", it: "Prodotto in Turchia" } },
   { code: "ES", labels: { en: "Made in Spain", fr: "Fabriqué en Espagne", it: "Prodotto in Spagna" } },
   { code: "FR", labels: { en: "Made in France", fr: "Fabriqué en France", it: "Prodotto in Francia" } },
+  { code: "IT", labels: { en: "Made in Italy", fr: "Fabriqué en Italie", it: "Prodotto in Italia" } },
   { code: "US", labels: { en: "Made in USA", fr: "Fabriqué aux États-Unis", it: "Prodotto negli Stati Uniti" } },
 ];
 
