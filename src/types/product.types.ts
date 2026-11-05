@@ -1,3 +1,5 @@
+import { Review } from "./review.types";
+
 export type Discount = {
   amount: number;
   percentage: number;
@@ -40,4 +42,5 @@ export type Product = {
   status?: string | null;
   prices?: PriceMap | null;
   countryOfOrigin?: string | null;
+  reviews?: Review[] | null;
 };

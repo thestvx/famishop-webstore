@@ -1,19 +1,38 @@
 import { Button } from "@/components/ui/button";
-import React from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React, { useState } from "react";
 import ReviewCard from "@/components/common/ReviewCard";
-import { reviewsData } from "@/lib/data/products";
-import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { Product } from "@/types/product.types";
 
-const ReviewsContent = () => {
+const ReviewsContent = ({ data }: { data: Product | null }) => {
   const { t } = useI18n();
+  const reviews = data?.reviews || [];
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const submit = async () => {
+    if (!data?.id) return;
+    setSubmitting(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: data.id, rating, content: comment }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed");
+      setMessage("Review submitted. Refresh to see it.");
+      setComment("");
+    } catch (e: any) {
+      setMessage(e?.message || "Failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between flex-col sm:flex-row mb-5 sm:mb-6">
@@ -21,40 +40,35 @@ const ReviewsContent = () => {
           <h3 className="text-xl sm:text-2xl font-bold text-black mr-2">
             {t("product.allReviews")}
           </h3>
-          <span className="text-sm sm:text-base text-black/60">(451)</span>
-        </div>
-        <div className="flex items-center space-x-2.5">
-          <Select defaultValue="latest">
-            <SelectTrigger className="min-w-[120px] font-medium text-xs sm:text-base px-4 py-3 sm:px-5 sm:py-4 text-black bg-[#F0F0F0] border-none rounded-full h-12">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="latest">{t("product.latest")}</SelectItem>
-              <SelectItem value="most-relevant">{t("product.mostRelevant")}</SelectItem>
-              <SelectItem value="oldest">{t("product.oldest")}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            type="button"
-            className="sm:min-w-[166px] px-4 py-3 sm:px-5 sm:py-4 rounded-full bg-black font-medium text-xs sm:text-base h-12"
-          >
-            {t("product.writeReview")}
-          </Button>
+          <span className="text-sm sm:text-base text-black/60">({reviews.length})</span>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5 sm:mb-9">
-        {reviewsData.map((review) => (
+        {reviews.length === 0 && <p className="text-black/60">No reviews yet.</p>}
+        {reviews.map((review) => (
           <ReviewCard key={review.id} data={review} isAction isDate />
         ))}
       </div>
-      <div className="w-full px-4 sm:px-0 text-center">
-        <Link
-          href="#"
-          className="inline-block w-[230px] px-11 py-4 border rounded-full hover:bg-black hover:text-white text-black transition-all font-medium text-sm sm:text-base border-black/10"
-        >
-          {t("product.loadMoreReviews")}
-        </Link>
+      <div className="border-t pt-4 space-y-3">
+        <h4 className="font-bold">Write a review</h4>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} onClick={() => setRating(n)} className={n <= rating ? "text-yellow-500" : "text-gray-300"}>
+              ★
+            </button>
+          ))}
+        </div>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          className="w-full border rounded-lg p-3 text-sm"
+          rows={3}
+          placeholder="Your review"
+        />
+        <Button onClick={submit} disabled={submitting} className="rounded-full bg-black text-white px-6">
+          {submitting ? "Submitting..." : t("product.writeReview")}
+        </Button>
+        {message && <p className="text-sm text-black/60">{message}</p>}
       </div>
     </section>
   );

@@ -9,6 +9,49 @@ import { useI18n } from "@/lib/i18n";
 import { fetchOrder } from "@/lib/ordersStore";
 import { printOrderReceipt } from "@/lib/receipt";
 
+function ReviewForm({ productId, productName }: { productId: number; productName: string }) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [msg, setMsg] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const submit = async () => {
+    setSubmitting(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, rating, content: comment }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed");
+      setMsg("Submitted. Thank you!");
+      setComment("");
+    } catch (e: any) {
+      setMsg(e?.message || "Failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  return (
+    <div className="mb-4 border rounded-xl p-4">
+      <div className="font-medium mb-2">{productName}</div>
+      <div className="flex gap-1 mb-2">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} onClick={() => setRating(n)} className={n <= rating ? "text-yellow-500" : "text-gray-300"}>
+            ★
+          </button>
+        ))}
+      </div>
+      <textarea value={comment} onChange={(e) => setComment(e.target.value)} className="w-full border rounded-lg p-2 text-sm" rows={2} placeholder="Your review" />
+      <button onClick={submit} disabled={submitting} className="mt-2 rounded-full bg-black text-white px-5 py-2 text-sm">
+        {submitting ? "Submitting..." : "Submit review"}
+      </button>
+      {msg && <p className="text-xs text-black/60 mt-2">{msg}</p>}
+    </div>
+  );
+}
+
 function SuccessContent() {
   const { t } = useI18n();
   const dispatch = useAppDispatch();
@@ -76,6 +119,15 @@ function SuccessContent() {
         >
           Print receipt
         </button>
+      )}
+
+      {order && order.items && order.items.length > 0 && (
+        <div className="w-full max-w-xl mt-6 text-left">
+          <h2 className="text-lg font-bold mb-3">Write a review</h2>
+          {order.items.map((it: any, idx: number) => (
+            <ReviewForm key={idx} productId={it.id} productName={it.name} />
+          ))}
+        </div>
       )}
       {status && (
         <p className="text-sm mb-6">
