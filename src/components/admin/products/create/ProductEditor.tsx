@@ -826,8 +826,33 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
             ))}
           </div>
         </div>
-         <div className="p-4 border-t border-black/10">
-           <div className="text-sm font-semibold mb-2">Custom color</div>
+          <div className="p-4 border-t border-black/10">
+            <div className="text-sm font-semibold mb-2">Selected colors</div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {colors.length === 0 && <span className="text-xs text-black/50">No colors selected</span>}
+              {colors.map((c) => {
+                const found = COLORS.find((x) => x.name === c);
+                const bg = found ? found.hex : c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setColors((prev) => prev.filter((x) => x !== c));
+                      markDirty();
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 text-xs"
+                  >
+                    <span className="w-4 h-4 rounded-full border border-black/10" style={{ background: bg }} />
+                    {found ? t(`color.${c}`) : c}
+                    <X size={12} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="p-4 border-t border-black/10">
+            <div className="text-sm font-semibold mb-2">Custom color</div>
            <div className="flex items-center gap-3">
              <input
                type="color"
