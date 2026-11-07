@@ -11,6 +11,7 @@ export type PriceMap = {
   DZD?: number | null;
   weightKg?: number | null;
   countryOfOrigin?: string | null;
+  views?: number | null;
 };
 
 export type Product = {
@@ -43,4 +44,5 @@ export type Product = {
   prices?: PriceMap | null;
   countryOfOrigin?: string | null;
   reviews?: Review[] | null;
+  views?: number | null;
 };

@@ -21,6 +21,20 @@ export default function ProductView({ slug }: { slug?: string[] }) {
   const productId = slug?.[0];
 
   useEffect(() => {
+    if (!productId) return;
+    try {
+      const key = `viewed-${productId}`;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {}
+    fetch("/api/products/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId }),
+    }).catch(() => {});
+  }, [productId]);
+
+  useEffect(() => {
     let cancelled = false;
     if (!productId) {
       setProductData(null);

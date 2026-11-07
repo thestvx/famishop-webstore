@@ -76,6 +76,7 @@ function normalizeProduct(row: AnyRecord): Product | null {
           weightKg: row.prices.weightKg != null ? Number(row.prices.weightKg) : null,
           countryOfOrigin: row.prices.countryOfOrigin != null ? String(row.prices.countryOfOrigin) : null,
           reviews: Array.isArray(row.prices.reviews) ? row.prices.reviews : null,
+          views: row.prices.views != null ? Number(row.prices.views) : null,
         }
       : null;
 
@@ -103,6 +104,12 @@ function normalizeProduct(row: AnyRecord): Product | null {
     packageSize: typeof row.package_size === "string" && row.package_size.trim() ? row.package_size : null,
     reviews:
       Array.isArray(row.reviews) ? row.reviews : prices?.reviews && Array.isArray(prices.reviews) ? prices.reviews : null,
+    views:
+      row.views != null
+        ? Number(row.views)
+        : prices?.views != null
+        ? Number(prices.views)
+        : null,
     countryOfOrigin: (() => {
       const raw =
         row.country_of_origin != null

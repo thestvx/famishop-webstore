@@ -53,6 +53,16 @@ export default function AdminOverviewPage() {
   const totalProducts = products.length;
   const totalOrders = orders.length;
 
+  const totalViews = products.reduce((sum: number, p: any) => {
+    const v = p.views != null ? Number(p.views) : p.prices?.views != null ? Number(p.prices.views) : 0;
+    return sum + (Number.isFinite(v) ? v : 0);
+  }, 0);
+  const mostViewed = [...products].sort((a: any, b: any) => {
+    const va = a.views != null ? Number(a.views) : a.prices?.views != null ? Number(a.prices.views) : 0;
+    const vb = b.views != null ? Number(b.views) : b.prices?.views != null ? Number(b.prices.views) : 0;
+    return vb - va;
+  })[0];
+
   // count unique customers by email/id if possible
   const uniqueCustomers = new Set();
   if (customers.length > 0) {
@@ -82,6 +92,7 @@ export default function AdminOverviewPage() {
     { label: "Total Orders", value: totalOrders, icon: ShoppingCart, color: "bg-green-50 text-green-600" },
     { label: "Customers", value: totalCustomers, icon: Users, color: "bg-purple-50 text-purple-600" },
     { label: "Revenue", value: revenue, icon: DollarSign, color: "bg-orange-50 text-orange-600", prefix: "" },
+    { label: "Store Visits (views)", value: totalViews, icon: Package, color: "bg-cyan-50 text-cyan-600", prefix: "" },
   ];
 
   const recent = products.slice(0, 8);
@@ -114,6 +125,15 @@ export default function AdminOverviewPage() {
           );
         })}
       </div>
+      {mostViewed && (
+        <div className="bg-white rounded-xl border border-black/10 p-5">
+          <h2 className="text-lg font-bold mb-2">Most Viewed Product</h2>
+          <p className="text-sm text-black/60">
+            {mostViewed.title} —{" "}
+            {mostViewed.views != null ? mostViewed.views : mostViewed.prices?.views || 0} views
+          </p>
+        </div>
+      )}
       <div className="bg-white rounded-xl border border-black/10 p-5">
         <h2 className="text-lg font-bold mb-4">Recent Products</h2>
         <div className="overflow-x-auto">
