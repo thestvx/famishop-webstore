@@ -77,6 +77,14 @@ function normalizeProduct(row: AnyRecord): Product | null {
           countryOfOrigin: row.prices.countryOfOrigin != null ? String(row.prices.countryOfOrigin) : null,
           reviews: Array.isArray(row.prices.reviews) ? row.prices.reviews : null,
           views: row.prices.views != null ? Number(row.prices.views) : null,
+          dailyViews:
+            row.prices.dailyViews && typeof row.prices.dailyViews === "object" && !Array.isArray(row.prices.dailyViews)
+              ? Object.fromEntries(
+                  Object.entries(row.prices.dailyViews)
+                    .map(([k, v]) => [k, Number(v)])
+                    .filter(([, v]) => Number.isFinite(v as number))
+                )
+              : null,
         }
       : null;
 
@@ -110,6 +118,7 @@ function normalizeProduct(row: AnyRecord): Product | null {
         : prices?.views != null
         ? Number(prices.views)
         : null,
+    dailyViews: prices?.dailyViews || null,
     countryOfOrigin: (() => {
       const raw =
         row.country_of_origin != null

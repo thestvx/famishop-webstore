@@ -12,6 +12,7 @@ export type PriceMap = {
   weightKg?: number | null;
   countryOfOrigin?: string | null;
   views?: number | null;
+  dailyViews?: Record<string, number> | null;
 };
 
 export type Product = {
@@ -45,4 +46,5 @@ export type Product = {
   countryOfOrigin?: string | null;
   reviews?: Review[] | null;
   views?: number | null;
+  dailyViews?: Record<string, number> | null;
 };

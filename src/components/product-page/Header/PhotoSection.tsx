@@ -47,7 +47,7 @@ const PhotoSection = ({ data }: { data: Product }) => {
               key={`${photo}-${index}`}
               type="button"
               aria-label={`${title} ${index + 1}`}
-              className={`bg-[#F0EEED] rounded-[13px] xl:rounded-[20px] w-full max-w-[111px] xl:max-w-[152px] aspect-square overflow-hidden border-2 transition-colors ${
+              className={`bg-[#F0EEED] rounded-md w-full max-w-[132px] xl:max-w-[176px] aspect-square overflow-hidden border-2 transition-all duration-200 hover:border-black/40 ${
                 activeImage === photo ? "border-black" : "border-transparent"
               }`}
               onClick={() => setSelected(photo)}
@@ -56,7 +56,7 @@ const PhotoSection = ({ data }: { data: Product }) => {
                 src={photo}
                 width={152}
                 height={152}
-                className="rounded-md w-full h-full object-contain p-1"
+                className="rounded-sm w-full h-full object-cover"
                 alt={title}
                 loading="lazy"
               />

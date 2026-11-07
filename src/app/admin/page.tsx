@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { newArrivalsData, topSellingData, relatedProductData } from "@/lib/data/products";
 import { Package, ShoppingCart, Users, DollarSign, Eye, TrendingUp } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import ProductImage, { PRODUCT_IMAGE_FALLBACK } from "@/components/common/ProductImage";
 
 const fallbackProducts = [
   ...newArrivalsData,
@@ -98,6 +99,7 @@ export default function AdminOverviewPage() {
   const topViewed = [...products]
     .map((p: any) => ({
       title: p.title,
+      srcUrl: p.src_url || p.srcUrl || "",
       views: p.views != null ? Number(p.views) : p.prices?.views != null ? Number(p.prices.views) : 0,
     }))
     .sort((a, b) => b.views - a.views)
@@ -123,32 +125,33 @@ export default function AdminOverviewPage() {
     ? `conic-gradient(${donutStops.join(", ")})`
     : "conic-gradient(#e5e7eb 0deg 360deg)";
 
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
+  const dayKey = (d: Date) =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  const getDailyViews = (p: any): Record<string, number> => {
+    const source = p.dailyViews || p.prices?.dailyViews;
+    return source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  };
+
+  const dailyVisits = Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return { date: d, label: d.toLocaleDateString(undefined, { weekday: "short" }), count: 0 };
+    d.setUTCDate(d.getUTCDate() - (13 - i));
+    const key = dayKey(d);
+    const count = products.reduce((sum: number, p: any) => {
+      const v = Number(getDailyViews(p)[key] || 0);
+      return sum + (Number.isFinite(v) ? v : 0);
+    }, 0);
+    return {
+      key,
+      date: d,
+      label: d.toLocaleDateString(undefined, { day: "2-digit", month: "short", timeZone: "UTC" }),
+      count,
+    };
   });
-  orders.forEach((o: any) => {
-    const raw = o.created_at || o.date;
-    if (!raw) return;
-    const d = new Date(raw);
-    const idx = last7Days.findIndex(
-      (day) => day.date.toDateString() === d.toDateString()
-    );
-    if (idx >= 0) last7Days[idx].count += 1;
-  });
-  const maxDay = Math.max(1, ...last7Days.map((d) => d.count));
-  const chartW = 320;
-  const chartH = 120;
-  const chartPoints = last7Days
-    .map((d, i) => {
-      const x = (i / Math.max(1, last7Days.length - 1)) * chartW;
-      const y = chartH - (d.count / maxDay) * (chartH - 20) - 10;
-      return { x, y, ...d };
-    })
-    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
-  const linePoints = chartPoints.map((p) => `${p.x},${p.y}`).join(" ");
-  const areaPoints = `0,${chartH} ${linePoints} ${chartW},${chartH}`;
+  const maxDaily = Math.max(1, ...dailyVisits.map((d) => d.count));
+  const todayVisits = dailyVisits[dailyVisits.length - 1]?.count || 0;
+  const last7Visits = dailyVisits.slice(-7).reduce((s, d) => s + d.count, 0);
+  const prev7Visits = dailyVisits.slice(0, 7).reduce((s, d) => s + d.count, 0);
+  const visitsTrend = prev7Visits > 0 ? ((last7Visits - prev7Visits) / prev7Visits) * 100 : last7Visits > 0 ? 100 : 0;
 
   const recent = products.slice(0, 8);
 
@@ -183,39 +186,48 @@ export default function AdminOverviewPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-xl border border-black/10 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">Orders (last 7 days)</h2>
-            <span className="text-xs text-black/40">total {orders.length}</span>
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold">Daily store visits</h2>
+              <p className="text-xs text-black/40">Product page visits over the last 14 days</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold leading-none">{todayVisits}</p>
+              <p className="text-[11px] text-black/40 mt-1">today</p>
+            </div>
           </div>
-          <div className="relative">
-            <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full h-36" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="ordersFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#111111" stopOpacity="0.18" />
-                  <stop offset="100%" stopColor="#111111" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {[0.25, 0.5, 0.75].map((g) => (
-                <line key={g} x1="0" y1={chartH * g} x2={chartW} y2={chartH * g} stroke="#00000010" strokeWidth="1" />
-              ))}
-              <polygon points={areaPoints} fill="url(#ordersFill)" />
-              <polyline
-                points={linePoints}
-                fill="none"
-                stroke="#111111"
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-              {chartPoints.map((p) => (
-                <circle key={p.label} cx={p.x} cy={p.y} r="3" fill="#ffffff" stroke="#111111" strokeWidth="2" />
-              ))}
-            </svg>
-            <div className="flex justify-between mt-2 text-[11px] text-black/40">
-              {last7Days.map((d) => (
-                <span key={d.label}>{d.label}</span>
-              ))}
+          <div className="flex items-end gap-1 sm:gap-1.5 h-44">
+            {dailyVisits.map((d, i) => (
+              <div key={d.key} className="flex-1 h-full flex flex-col items-center justify-end gap-1 group">
+                <span className="text-[10px] font-semibold text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {d.count}
+                </span>
+                <div
+                  className="w-full rounded-t-md bg-black/80 group-hover:bg-black transition-all duration-500"
+                  style={{ height: `${Math.max(d.count > 0 ? 3 : 0, (d.count / maxDaily) * 100)}%` }}
+                  title={`${d.label}: ${d.count} visit${d.count === 1 ? "" : "s"}`}
+                />
+                <span className="text-[9px] text-black/40 w-full text-center truncate">
+                  {i % 2 === 0 ? d.date.getUTCDate() : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-xs border-t border-black/5 pt-3">
+            <div>
+              <p className="text-black/40">Today</p>
+              <p className="font-bold text-base">{todayVisits}</p>
+            </div>
+            <div>
+              <p className="text-black/40">Last 7 days</p>
+              <p className="font-bold text-base">{last7Visits}</p>
+            </div>
+            <div>
+              <p className="text-black/40">vs previous 7 days</p>
+              <p className={`font-bold text-base ${visitsTrend >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {visitsTrend >= 0 ? "+" : ""}
+                {visitsTrend.toFixed(0)}%
+              </p>
             </div>
           </div>
         </div>
@@ -252,23 +264,34 @@ export default function AdminOverviewPage() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-black/10 p-5">
           <div className="flex items-center gap-2 mb-4">
             <Eye size={18} />
-            <h2 className="text-lg font-bold">Top viewed products</h2>
+            <h2 className="text-lg font-bold">Most viewed products</h2>
           </div>
           {topViewed.length === 0 ? (
             <p className="text-sm text-black/40">No views tracked yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {topViewed.map((p) => (
-                <div key={p.title} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="truncate pr-3">{p.title}</span>
-                    <span className="font-semibold tabular-nums">{p.views}</span>
-                  </div>
-                  <div className="h-2.5 w-full rounded-full bg-black/5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-black transition-all duration-700"
-                      style={{ width: `${Math.max(4, (p.views / maxViewed) * 100)}%` }}
+                <div key={p.title} className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-md bg-[#F0EEED] overflow-hidden shrink-0">
+                    <ProductImage
+                      src={p.srcUrl || PRODUCT_IMAGE_FALLBACK}
+                      width={44}
+                      height={44}
+                      className="w-full h-full object-cover"
+                      alt={p.title}
                     />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center justify-between text-sm gap-3">
+                      <span className="truncate font-medium">{p.title}</span>
+                      <span className="font-semibold tabular-nums shrink-0">{p.views}</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-black/5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-black transition-all duration-700"
+                        style={{ width: `${Math.max(4, (p.views / maxViewed) * 100)}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
