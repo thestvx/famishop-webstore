@@ -39,9 +39,9 @@ const PhotoSection = ({ data }: { data: Product }) => {
   };
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row lg:gap-3.5">
+    <div className="flex flex-col-reverse lg:flex-row lg:items-start lg:gap-3.5">
       {images.length > 1 && (
-        <div className="flex lg:flex-col gap-3 lg:gap-3.5 w-full lg:w-fit items-center lg:justify-start justify-center">
+        <div className="flex lg:flex-col gap-3 lg:gap-3.5 w-full lg:w-fit items-center lg:items-start lg:justify-start justify-center lg:self-start">
           {images.map((photo, index) => (
             <button
               key={`${photo}-${index}`}
@@ -66,7 +66,8 @@ const PhotoSection = ({ data }: { data: Product }) => {
       )}
 
       <div
-        className="relative flex items-center justify-center bg-[#F0EEED] rounded-[13px] sm:rounded-[20px] w-full max-w-[560px] mx-auto aspect-square overflow-hidden mb-3 lg:mb-0 cursor-zoom-in group"
+        className="relative flex items-center justify-center bg-[#F0EEED] rounded-[13px] sm:rounded-[20px] w-full max-w-[560px] mx-auto aspect-square lg:self-start shrink-0 overflow-hidden mb-3 lg:mb-0 cursor-zoom-in group"
+        style={{ aspectRatio: "1 / 1" }}
         onMouseEnter={() => setZoomed(true)}
         onMouseLeave={() => {
           setZoomed(false);
