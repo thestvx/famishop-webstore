@@ -277,6 +277,8 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   }, []);
   const dragIndex = useRef<number | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
+  const mainScrollRef = useRef(0);
+  const prevViewRef = useRef<View>("main");
 
   useEffect(() => {
     let active = true;
@@ -301,7 +303,36 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   }, [categoryTree, categoryId, locale, t]);
 
   useEffect(() => {
-    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (view !== "main") return;
+    const scroller = topRef.current?.closest("main") as HTMLElement | null;
+    const onScroll = () => {
+      mainScrollRef.current = scroller ? scroller.scrollTop : window.scrollY;
+    };
+    if (scroller) scroller.addEventListener("scroll", onScroll, { passive: true });
+    else window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      if (scroller) scroller.removeEventListener("scroll", onScroll);
+      else window.removeEventListener("scroll", onScroll);
+    };
+  }, [view]);
+
+  useEffect(() => {
+    const previous = prevViewRef.current;
+    if (view !== "main" && previous === "main") {
+      topRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+    } else if (view === "main" && previous !== "main") {
+      const target = mainScrollRef.current;
+      const scroller = topRef.current?.closest("main") as HTMLElement | null;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (scroller) scroller.scrollTo({ top: target, behavior: "auto" });
+          else window.scrollTo({ top: target, behavior: "auto" });
+        });
+      });
+    } else if (view !== "main" && previous !== "main") {
+      topRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+    prevViewRef.current = view;
   }, [view]);
 
   useEffect(() => {
