@@ -21,6 +21,9 @@ export async function POST(req: Request) {
   try {
     const { data: product } = await supabase.from("products").select("*").eq("id", productId).maybeSingle();
     if (!product) return NextResponse.json({ ok: false }, { status: 200 });
+    if (product.title === "__famishop_site_stats__" || product.prices?.__analytics === true) {
+      return NextResponse.json({ ok: false }, { status: 200 });
+    }
 
     const existingPrices =
       product.prices && typeof product.prices === "object" && !Array.isArray(product.prices)

@@ -18,6 +18,7 @@ async function trackViewDirect(productId: string | number) {
   try {
     const { data: product } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
     if (!product) return;
+    if (product.title === "__famishop_site_stats__" || product.prices?.__analytics === true) return;
     const existingPrices =
       product.prices && typeof product.prices === "object" && !Array.isArray(product.prices)
         ? product.prices

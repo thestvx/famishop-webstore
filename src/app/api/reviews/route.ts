@@ -20,6 +20,9 @@ export async function POST(req: Request) {
   if (error || !product) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
+  if (product.title === "__famishop_site_stats__" || product.prices?.__analytics === true) {
+    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  }
 
   const reviews = Array.isArray(product.reviews)
     ? product.reviews

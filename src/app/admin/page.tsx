@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { newArrivalsData, topSellingData, relatedProductData } from "@/lib/data/products";
 import { Package, ShoppingCart, Users, DollarSign, Eye, TrendingUp } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isAnalyticsProduct } from "@/lib/productsStore";
 import ProductImage, { PRODUCT_IMAGE_FALLBACK } from "@/components/common/ProductImage";
 
 const fallbackProducts = [
@@ -56,25 +57,30 @@ export default function AdminOverviewPage() {
     return () => clearInterval(id);
   }, [load]);
 
-  const totalProducts = products.length;
+  const analyticsProduct = products.find((p: any) => isAnalyticsProduct(p));
+  const realProducts = products.filter((p: any) => !isAnalyticsProduct(p));
+
+  const totalProducts = realProducts.length;
   const totalOrders = orders.length;
 
-  const totalViews = products.reduce((sum: number, p: any) => {
+  const totalViews = realProducts.reduce((sum: number, p: any) => {
     const v = p.views != null ? Number(p.views) : p.prices?.views != null ? Number(p.prices.views) : 0;
     return sum + (Number.isFinite(v) ? v : 0);
   }, 0);
-  const mostViewed = [...products].sort((a: any, b: any) => {
+  const mostViewed = [...realProducts].sort((a: any, b: any) => {
     const va = a.views != null ? Number(a.views) : a.prices?.views != null ? Number(a.prices.views) : 0;
     const vb = b.views != null ? Number(b.views) : b.prices?.views != null ? Number(b.prices.views) : 0;
     return vb - va;
   })[0];
 
-  const siteStatsProduct = products.find(
-    (p: any) =>
-      p.prices &&
-      typeof p.prices === "object" &&
-      (p.prices.siteVisits != null || (p.prices.siteDailyViews && typeof p.prices.siteDailyViews === "object"))
-  );
+  const siteStatsProduct =
+    analyticsProduct ||
+    realProducts.find(
+      (p: any) =>
+        p.prices &&
+        typeof p.prices === "object" &&
+        (p.prices.siteVisits != null || (p.prices.siteDailyViews && typeof p.prices.siteDailyViews === "object"))
+    );
   const siteDailyViews: Record<string, number> =
     siteStatsProduct?.prices?.siteDailyViews &&
     typeof siteStatsProduct.prices.siteDailyViews === "object" &&
@@ -121,7 +127,7 @@ export default function AdminOverviewPage() {
     { label: "Store Visits", value: storeVisits, icon: Eye, color: "bg-cyan-50 text-cyan-600", prefix: "" },
   ];
 
-  const topViewed = [...products]
+  const topViewed = [...realProducts]
     .map((p: any) => ({
       title: p.title,
       srcUrl: p.src_url || p.srcUrl || "",
@@ -163,7 +169,7 @@ export default function AdminOverviewPage() {
     const key = dayKey(d);
     const count = siteStatsProduct
       ? Number(siteDailyViews[key] || 0)
-      : products.reduce((sum: number, p: any) => {
+      : realProducts.reduce((sum: number, p: any) => {
           const v = Number(getDailyViews(p)[key] || 0);
           return sum + (Number.isFinite(v) ? v : 0);
         }, 0);
@@ -180,7 +186,7 @@ export default function AdminOverviewPage() {
   const prev7Visits = dailyVisits.slice(0, 7).reduce((s, d) => s + d.count, 0);
   const visitsTrend = prev7Visits > 0 ? ((last7Visits - prev7Visits) / prev7Visits) * 100 : last7Visits > 0 ? 100 : 0;
 
-  const recent = products.slice(0, 8);
+  const recent = realProducts.slice(0, 8);
 
   return (
     <div className="space-y-6">

@@ -10,6 +10,7 @@ import React from "react";
 import * as motion from "framer-motion/client";
 import { useI18n } from "@/lib/i18n";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isAnalyticsProduct } from "@/lib/productsStore";
 import { useEffect, useState } from "react";
 const Header = () => {
   const { t } = useI18n();
@@ -18,9 +19,10 @@ const Header = () => {
     if (!isSupabaseConfigured() || !supabase) return;
     (async () => {
       try {
-        const { data: products } = await supabase.from("products").select("brand");
-        const brands = new Set((products || []).map((p: any) => p.brand).filter(Boolean)).size;
-        const productsCount = (products || []).length;
+        const { data: products } = await supabase.from("products").select("brand,title,prices");
+        const realProducts = (products || []).filter((p: any) => !isAnalyticsProduct(p));
+        const brands = new Set(realProducts.map((p: any) => p.brand).filter(Boolean)).size;
+        const productsCount = realProducts.length;
         const { data: orders } = await supabase.from("orders").select("customer_email");
         const customers = new Set((orders || []).map((o: any) => o.customer_email).filter(Boolean)).size;
         setStats({ brands, products: productsCount, customers });

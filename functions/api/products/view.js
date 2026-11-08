@@ -30,6 +30,9 @@ export async function onRequestPost(context) {
     const rows = await productRes.json();
     const product = Array.isArray(rows) && rows.length ? rows[0] : null;
     if (!product) return json({ ok: false }, 200);
+    if (product.title === "__famishop_site_stats__" || product.prices?.__analytics === true) {
+      return json({ ok: false }, 200);
+    }
 
     const existingPrices =
       product.prices && typeof product.prices === "object" && !Array.isArray(product.prices)

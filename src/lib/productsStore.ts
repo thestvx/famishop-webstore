@@ -3,6 +3,16 @@ import { Product } from "@/types/product.types";
 
 type AnyRecord = Record<string, any>;
 
+export const ANALYTICS_PRODUCT_TITLE = "__famishop_site_stats__";
+
+export function isAnalyticsProduct(row: any): boolean {
+  if (!row) return false;
+  if (row.title === ANALYTICS_PRODUCT_TITLE) return true;
+  return Boolean(
+    row.prices && typeof row.prices === "object" && !Array.isArray(row.prices) && row.prices.__analytics === true
+  );
+}
+
 function toStringRecord(value: any): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, string> = {};
@@ -169,6 +179,7 @@ export async function fetchProducts(): Promise<Product[]> {
     .order("created_at", { ascending: false });
   if (error || !Array.isArray(data)) return [];
   return data
+    .filter((row: AnyRecord) => !isAnalyticsProduct(row))
     .map((row: AnyRecord) => normalizeProduct(row))
     .filter((product): product is Product => product !== null);
 }
@@ -183,7 +194,7 @@ export async function fetchProduct(id: string | number): Promise<Product | null>
   if (error) {
     throw new Error(error.message || "Failed to load product");
   }
-  if (!data) return null;
+  if (!data || isAnalyticsProduct(data)) return null;
   return normalizeProduct(data);
 }
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isAnalyticsProduct } from "@/lib/productsStore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import ProductEditor from "@/components/admin/products/create/ProductEditor";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,7 +39,7 @@ export default function AdminProductsPage() {
     }
     const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
     if (!error && data) {
-      setProducts(data as Prod[]);
+      setProducts((data as any[]).filter((p) => !isAnalyticsProduct(p)) as Prod[]);
     } else {
       setProducts([]);
     }

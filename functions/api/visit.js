@@ -12,54 +12,85 @@ export async function onRequestPost(context) {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhaG9ycXpubHJ6ZGx1cHZlb2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMjQzNjgsImV4cCI6MjEwODcwMDM2OH0.5qGE1B8hQUxW113xKEI6oW9NoIraAkmacMFbb1kCRws";
 
   try {
-    const anchorRes = await fetch(
-      `${supabaseUrl}/rest/v1/products?select=id,prices&order=id.asc&limit=1`,
-      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
-    );
-    if (!anchorRes.ok) return json({ ok: false }, 200);
-    const rows = await anchorRes.json();
-    const anchor = Array.isArray(rows) && rows.length ? rows[0] : null;
-    if (!anchor) return json({ ok: false }, 200);
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const anchor = await findAnchor(supabaseUrl, supabaseKey);
+      if (!anchor) return json({ ok: false }, 200);
 
-    const existingPrices =
-      anchor.prices && typeof anchor.prices === "object" && !Array.isArray(anchor.prices)
-        ? anchor.prices
-        : {};
-    const siteDailyViews =
-      existingPrices.siteDailyViews &&
-      typeof existingPrices.siteDailyViews === "object" &&
-      !Array.isArray(existingPrices.siteDailyViews)
-        ? { ...existingPrices.siteDailyViews }
-        : {};
+      const existingPrices =
+        anchor.prices && typeof anchor.prices === "object" && !Array.isArray(anchor.prices)
+          ? anchor.prices
+          : {};
+      const siteDailyViews =
+        existingPrices.siteDailyViews &&
+        typeof existingPrices.siteDailyViews === "object" &&
+        !Array.isArray(existingPrices.siteDailyViews)
+          ? { ...existingPrices.siteDailyViews }
+          : {};
 
-    const now = new Date();
-    const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
-    const current =
-      existingPrices.siteVisits != null
-        ? Number(existingPrices.siteVisits)
-        : Object.values(siteDailyViews).reduce(
-            (sum, value) => sum + (Number.isFinite(Number(value)) ? Number(value) : 0),
-            0
-          );
-    const next = (Number.isFinite(current) ? current : 0) + 1;
-    siteDailyViews[key] = (Number.isFinite(Number(siteDailyViews[key])) ? Number(siteDailyViews[key]) : 0) + 1;
+      const now = new Date();
+      const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+      const current =
+        existingPrices.siteVisits != null
+          ? Number(existingPrices.siteVisits)
+          : Object.values(siteDailyViews).reduce(
+              (sum, value) => sum + (Number.isFinite(Number(value)) ? Number(value) : 0),
+              0
+            );
+      const safeCurrent = Number.isFinite(current) ? current : 0;
+      const next = safeCurrent + 1;
+      siteDailyViews[key] = (Number.isFinite(Number(siteDailyViews[key])) ? Number(siteDailyViews[key]) : 0) + 1;
 
-    const prices = { ...existingPrices, siteVisits: next, siteDailyViews };
-    const res = await fetch(`${supabaseUrl}/rest/v1/products?id=eq.${anchor.id}`, {
-      method: "PATCH",
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ prices }),
-    });
-    if (!res.ok) return json({ ok: false }, 200);
-    return json({ ok: true, visits: next });
+      const prices = { ...existingPrices, siteVisits: next, siteDailyViews };
+      const versionFilter =
+        existingPrices.siteVisits != null
+          ? `prices-%3E%3EsiteVisits=eq.${safeCurrent}`
+          : "prices-%3E%3EsiteVisits=is.null";
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/products?id=eq.${anchor.id}&${versionFilter}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify({ prices }),
+        }
+      );
+      if (!res.ok) continue;
+      const updated = await res.json().catch(() => []);
+      if (Array.isArray(updated) && updated.length === 1) {
+        return json({ ok: true, visits: next });
+      }
+      await sleep(20 + Math.floor(Math.random() * 60));
+    }
+    return json({ ok: false }, 200);
   } catch {
     return json({ ok: false }, 200);
   }
+}
+
+async function findAnchor(supabaseUrl, supabaseKey) {
+  const analyticsRes = await fetch(
+    `${supabaseUrl}/rest/v1/products?select=id,prices&prices-%3E%3E__analytics=eq.true&limit=1`,
+    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+  );
+  if (analyticsRes.ok) {
+    const rows = await analyticsRes.json();
+    if (Array.isArray(rows) && rows.length) return rows[0];
+  }
+  const legacyRes = await fetch(
+    `${supabaseUrl}/rest/v1/products?select=id,prices&order=id.asc&limit=1`,
+    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+  );
+  if (!legacyRes.ok) return null;
+  const legacyRows = await legacyRes.json();
+  return Array.isArray(legacyRows) && legacyRows.length ? legacyRows[0] : null;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function json(data, status = 200) {
