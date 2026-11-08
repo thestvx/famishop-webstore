@@ -6,7 +6,11 @@ function todayKey() {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
-export async function POST() {
+export async function POST(req: Request) {
+  const referer = req.headers.get("referer") || "";
+  if (referer.includes("/admin")) {
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
   if (!isSupabaseConfigured() || !supabase) {
     return NextResponse.json({ ok: false }, { status: 200 });
   }

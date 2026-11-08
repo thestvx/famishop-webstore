@@ -1,5 +1,7 @@
 export async function onRequestPost(context) {
-  const { env } = context;
+  const { env, request } = context;
+  const referer = request.headers.get("referer") || "";
+  if (referer.includes("/admin")) return json({ ok: false }, 200);
   const supabaseUrl =
     env.NEXT_PUBLIC_SUPABASE_URL ||
     env.SUPABASE_URL ||

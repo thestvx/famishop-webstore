@@ -243,6 +243,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const [brand, setBrand] = useState("");
   const [brandSearch, setBrandSearch] = useState("");
   const [size, setSize] = useState("");
+  const [customSize, setCustomSize] = useState("");
   const [condition, setCondition] = useState("");
   const [colors, setColors] = useState<string[]>([]);
   const [customColor, setCustomColor] = useState("#000000");
@@ -388,6 +389,32 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
     if (type === "clothing") return CLOTHING_SIZES;
     return [];
   }, [categoryId]);
+
+  const sizeList = useMemo(
+    () => size.split(/[,/|]/).map((s) => s.trim()).filter(Boolean),
+    [size]
+  );
+
+  const toggleSize = (value: string) => {
+    setSize((prev) => {
+      const list = prev.split(/[,/|]/).map((s) => s.trim()).filter(Boolean);
+      const next = list.includes(value) ? list.filter((s) => s !== value) : [...list, value];
+      return next.join(", ");
+    });
+    markDirty();
+  };
+
+  const addCustomSize = () => {
+    const value = customSize.trim();
+    if (!value) return;
+    setSize((prev) => {
+      const list = prev.split(/[,/|]/).map((s) => s.trim()).filter(Boolean);
+      if (list.includes(value)) return prev;
+      return [...list, value].join(", ");
+    });
+    setCustomSize("");
+    markDirty();
+  };
 
   const filteredCategories = useMemo(() => {
     if (categorySearch.trim()) {
@@ -736,13 +763,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               {sizes.map((s) => (
                 <button
                   key={s}
-                  onClick={() => {
-                    setSize(s);
-                    setView("main");
-                    markDirty();
-                  }}
+                  type="button"
+                  onClick={() => toggleSize(s)}
                   className={`py-3 rounded-xl border text-sm font-medium ${
-                    size === s ? "bg-black text-white border-black" : "bg-white border-black/10"
+                    sizeList.includes(s) ? "bg-black text-white border-black" : "bg-white border-black/10"
                   }`}
                 >
                   {s}
@@ -756,13 +780,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               {AGE_SIZES.map((s) => (
                 <button
                   key={s}
-                  onClick={() => {
-                    setSize(s);
-                    setView("main");
-                    markDirty();
-                  }}
+                  type="button"
+                  onClick={() => toggleSize(s)}
                   className={`py-3 rounded-xl border text-sm font-medium ${
-                    size === s ? "bg-black text-white border-black" : "bg-white border-black/10"
+                    sizeList.includes(s) ? "bg-black text-white border-black" : "bg-white border-black/10"
                   }`}
                 >
                   {s}
@@ -770,6 +791,52 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
               ))}
             </div>
           </div>
+          <div>
+            <div className="text-sm font-semibold mb-2">Custom size</div>
+            <div className="flex gap-2">
+              <input
+                value={customSize}
+                onChange={(e) => setCustomSize(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomSize();
+                  }
+                }}
+                placeholder="e.g. 3XL"
+                className="flex-1 px-3 py-2 rounded-lg border border-black/10 text-sm"
+              />
+              <button
+                type="button"
+                onClick={addCustomSize}
+                className="px-4 py-2 rounded-lg bg-black text-white text-sm font-medium"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+          {sizeList.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sizeList.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggleSize(s)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-black/5 px-3 py-1.5 text-xs font-medium"
+                >
+                  {s}
+                  <X size={12} />
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setView("main")}
+            className="w-full rounded-full bg-black text-white py-3 text-sm font-medium"
+          >
+            Done
+          </button>
         </div>
       </ScreenShell>
     );
