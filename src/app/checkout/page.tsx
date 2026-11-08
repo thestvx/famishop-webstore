@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks/redux";
@@ -44,6 +44,19 @@ type ShippingOffer = {
 const PHONE_PREFIX: Record<CountryCode, string> = { FR: "+33", IT: "+39" };
 const COUNTRY_NAME: Record<CountryCode, string> = { FR: "France", IT: "Italy" };
 
+const FREE_SHIPPING: ShippingOffer = {
+  operator: "famishop",
+  carrier: "FamiShop",
+  service: "free",
+  label: "Livraison gratuite",
+  price: 0,
+  currency: "EUR",
+  deliveryType: "HOME",
+  deliveryDate: null,
+  deliveryLabel: null,
+  category: "domicile",
+};
+
 const initialCustomer: Customer = {
   firstName: "",
   lastName: "",
@@ -70,11 +83,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<Step>(1);
   const [customer, setCustomer] = useState<Customer>(initialCustomer);
   const [errors, setErrors] = useState<Partial<Record<keyof Customer, string>>>({});
-  const [offers, setOffers] = useState<ShippingOffer[]>([]);
-  const [selectedOffer, setSelectedOffer] = useState<ShippingOffer | null>(null);
-  const [shippingType, setShippingType] = useState<ShippingOffer["category"] | null>(null);
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [selectedOffer] = useState<ShippingOffer>(FREE_SHIPPING);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -126,9 +135,6 @@ export default function CheckoutPage() {
       const saved = JSON.parse(raw);
       if (saved?.step) setStep(saved.step);
       if (saved?.customer) setCustomer(saved.customer);
-      if (saved?.selectedOffer) setSelectedOffer(saved.selectedOffer);
-      if (saved?.shippingType) setShippingType(saved.shippingType);
-      if (saved?.offers) setOffers(saved.offers);
     } catch {
       // ignore
     }
@@ -137,27 +143,17 @@ export default function CheckoutPage() {
   // Persist checkout progress.
   useEffect(() => {
     try {
-      window.localStorage.setItem(
-        "famishop-checkout",
-        JSON.stringify({ step, customer, selectedOffer, shippingType, offers })
-      );
+      window.localStorage.setItem("famishop-checkout", JSON.stringify({ step, customer }));
     } catch {
       // ignore
     }
-  }, [step, customer, selectedOffer, shippingType, offers]);
+  }, [step, customer]);
   const [paymentMethod] = useState<PaymentMethod>("stripe");
 
   const items = useMemo(() => cart?.items || [], [cart?.items]);
   const cartId = cart?.cartId || null;
-  const shippingFee = selectedOffer?.price || 0;
+  const shippingFee = 0;
   const phonePrefix = PHONE_PREFIX[customer.country];
-
-  useEffect(() => {
-    if (step === 2 && customer.postalCode && customer.city) {
-      void loadShipping(customer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
 
   useEffect(() => {
     if (rehydrated && items.length === 0 && !submitting && !orderPlaced) {
@@ -181,52 +177,6 @@ export default function CheckoutPage() {
 
   const total = Math.max(subtotal + shippingFee - discountAmount, 0);
 
-  const loadShipping = useCallback(
-    async (target: Customer) => {
-      setShippingLoading(true);
-      setShippingError(null);
-      setOffers([]);
-      setSelectedOffer(null);
-      try {
-        const res = await fetch("/api/shipping/quote", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            country: target.country,
-            postalCode: target.postalCode.trim(),
-            city: target.city.trim(),
-            items: items.map((item) => ({
-              id: item.id,
-              quantity: item.quantity,
-              packageSize: (item as any).packageSize || null,
-              weightGrams: (item as any).weightGrams || null,
-              weightKg: (item as any).weightKg || null,
-              lengthCm: (item as any).lengthCm || null,
-              widthCm: (item as any).widthCm || null,
-              heightCm: (item as any).heightCm || null,
-            })),
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || t("checkout.shippingError"));
-        const list: ShippingOffer[] = Array.isArray(data?.offers) ? data.offers : [];
-        if (list.length === 0) throw new Error(t("checkout.shippingNoOptions"));
-        setOffers(list);
-        const firstType = (["domicile", "relais", "express"] as const).find((cat) =>
-          list.some((o) => o.category === cat)
-        );
-        setShippingType(firstType || list[0].category);
-        const firstInType = list.find((o) => o.category === (firstType || list[0].category));
-        setSelectedOffer(firstInType || list[0]);
-      } catch (e: any) {
-        setShippingError(e?.message || t("checkout.shippingError"));
-      } finally {
-        setShippingLoading(false);
-      }
-    },
-    [items, t]
-  );
-
   const validateCustomer = () => {
     const e: Partial<Record<keyof Customer, string>> = {};
     if (!customer.address.trim()) e.address = t("checkout.required");
@@ -245,11 +195,9 @@ export default function CheckoutPage() {
     if (step === 1) {
       if (!validateCustomer()) return;
       setStep(2);
-      void loadShipping(customer);
       return;
     }
     if (step === 2) {
-      if (!selectedOffer) return;
       setStep(3);
       return;
     }
@@ -356,17 +304,6 @@ export default function CheckoutPage() {
     </div>
   );
 
-  const formatDeliveryDate = (value: string | null) => {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(locale || undefined, {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
   if (!rehydrated) {
     return (
       <main className="pb-20">
@@ -460,96 +397,13 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 </div>
-                {shippingLoading && (
-                  <div className="p-6 text-center text-sm text-black/50">{t("checkout.shippingLoading")}</div>
-                )}
-                {!shippingLoading && shippingError && (
-                  <div className="space-y-3">
-                    <div className="text-sm text-red-500">{shippingError}</div>
-                    <button
-                      type="button"
-                      onClick={() => void loadShipping(customer)}
-                      className="px-5 py-2.5 rounded-full border border-black/10 text-sm font-medium"
-                    >
-                      {t("checkout.shippingRetry")}
-                    </button>
+                <label className="flex items-center gap-3 p-4 border border-black rounded-xl">
+                  <input type="radio" name="shipping" checked readOnly className="accent-black" />
+                  <div>
+                    <div className="font-medium">{t("checkout.freeShipping")}</div>
+                    <div className="text-sm text-black/50">{t("checkout.freeShippingDesc")}</div>
                   </div>
-                )}
-                {!shippingLoading && !shippingError && offers.length > 0 && (
-                  <>
-                    <div className="text-sm text-black/60 mb-2">{t("checkout.shippingTypePrompt")}</div>
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      {(["domicile", "relais", "express"] as const).map((cat) => {
-                        const group = offers.filter((o) => o.category === cat);
-                        if (group.length === 0) return null;
-                        const cheapest = group.reduce((a, b) => (a.price < b.price ? a : b));
-                        return (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => {
-                              setShippingType(cat);
-                              const first = offers.find((o) => o.category === cat);
-                              if (first) setSelectedOffer(first);
-                            }}
-                            className={cn(
-                              "p-3 rounded-xl border text-sm font-medium transition",
-                              shippingType === cat ? "border-black bg-black text-white" : "border-black/10 bg-white"
-                            )}
-                          >
-                            <div>{t(`checkout.shippingCategory.${cat}`)}</div>
-                            <div className="text-xs opacity-80">
-                              {t("checkout.fromPrice")} {formatPrice(cheapest.price)}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="text-sm text-black/60 mb-2">{t("checkout.shippingSelectPrompt")}</div>
-                    {offers
-                      .filter((o) => o.category === shippingType)
-                      .map((offer) => {
-                        const key = `${offer.operator}:${offer.service}`;
-                        return (
-                          <label
-                            key={key}
-                            className={cn(
-                              "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition mb-2",
-                              selectedOffer &&
-                                selectedOffer.operator === offer.operator &&
-                                selectedOffer.service === offer.service
-                                ? "border-black"
-                                : "border-black/10"
-                            )}
-                          >
-                            <input
-                              type="radio"
-                              name="shipping"
-                              value={key}
-                              checked={
-                                !!selectedOffer &&
-                                selectedOffer.operator === offer.operator &&
-                                selectedOffer.service === offer.service
-                              }
-                              onChange={() => setSelectedOffer(offer)}
-                            />
-                            <div>
-                              <div className="font-medium">
-                                {offer.carrier} - {offer.label}
-                              </div>
-                              <div className="text-sm text-black/50">
-                                {offer.deliveryLabel || t("checkout.deliveryHome")}
-                                {offer.deliveryDate
-                                  ? ` · ${t("checkout.deliveryEstimate")}: ${formatDeliveryDate(offer.deliveryDate)}`
-                                  : ""}
-                              </div>
-                            </div>
-                            <span className="ml-auto font-bold">{formatPrice(offer.price)}</span>
-                          </label>
-                        );
-                      })}
-                  </>
-                )}
+                </label>
               </div>
             )}
 
@@ -580,20 +434,10 @@ export default function CheckoutPage() {
                     </div>
                   );
                 })}
-                {selectedOffer && (
-                  <div className="rounded-xl border border-black/10 p-4 text-sm">
-                    <div className="font-medium mb-1">{t("checkout.shippingOptions")}</div>
-                    <div>
-                      {selectedOffer.carrier} - {selectedOffer.label}
-                    </div>
-                    {selectedOffer.deliveryDate && (
-                      <div className="text-black/50">
-                        {t("checkout.deliveryEstimate")}: {formatDeliveryDate(selectedOffer.deliveryDate)}
-                      </div>
-                    )}
-                    <div className="font-bold mt-1">{formatPrice(selectedOffer.price)}</div>
-                  </div>
-                )}
+                <div className="rounded-xl border border-black/10 p-4 text-sm">
+                  <div className="font-medium mb-1">{t("checkout.shippingOptions")}</div>
+                  <div className="font-medium text-green-600">{t("checkout.freeShipping")}</div>
+                </div>
                 <div className="pt-4 border-t text-sm text-black/60">
                   {t("checkout.reviewNote")}
                 </div>
@@ -627,7 +471,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  disabled={step === 2 && (shippingLoading || !!shippingError || !selectedOffer)}
+                  disabled={step === 2 && !selectedOffer}
                   className="px-6 py-3 rounded-full bg-black text-white text-sm font-medium disabled:opacity-50"
                 >
                   {t("checkout.continue")}
@@ -654,10 +498,8 @@ export default function CheckoutPage() {
                 <span className="font-medium">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-black/60">{t("cart.shipping")}</span>
-                <span className="font-medium">
-                  {selectedOffer ? formatPrice(shippingFee) : t("checkout.shippingPending")}
-                </span>
+                <span className="text-black/60">{t("cart.deliveryFee")}</span>
+                <span className="font-medium text-green-600">{t("checkout.freeShipping")}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between">

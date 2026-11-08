@@ -252,36 +252,7 @@ export async function POST(req: Request) {
 
   const subtotal = round(subtotalBase * rate);
   const shippingSelection = body?.shipping || {};
-  const shippingItems = incomingItems.map((inc) => {
-    const product: any = productMap.get(Number(inc.id));
-    return {
-      ...inc,
-      packageSize: product?.package_size || (product as any)?.packageSize || null,
-      weightGrams: product?.weight_grams || (product as any)?.weightGrams || ((product as any)?.prices?.weightKg ? Math.round(Number((product as any).prices.weightKg) * 1000) : null),
-      weightKg: product?.weight_kg || (product as any)?.weightKg || ((product as any)?.prices?.weightKg ?? null),
-      weight_kg: product?.weight_kg || (product as any)?.weight_kg || ((product as any)?.prices?.weightKg ?? null),
-      lengthCm: product?.length_cm || (product as any)?.lengthCm || null,
-      widthCm: product?.width_cm || (product as any)?.widthCm || null,
-      heightCm: product?.height_cm || (product as any)?.heightCm || null,
-    };
-  });
-  let shippingBase: number;
-  try {
-    shippingBase = await resolveShippingBase({
-      country,
-      postalCode: String(customer.postalCode || "").trim(),
-      city,
-      items: shippingItems,
-      selected: {
-        operator: shippingSelection.operator,
-        service: shippingSelection.service,
-        price: shippingSelection.price,
-      },
-    });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Shipping quote failed" }, { status: 502 });
-  }
-  const shippingFee = round(shippingBase * rate);
+  const shippingFee = 0;
   const tax = 0;
   const total = round(subtotal - 0 + shippingFee + tax);
 
@@ -302,7 +273,7 @@ export async function POST(req: Request) {
   const shippingMethodLabel =
     shippingSelection.label ||
     [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
-    "standard";
+    "Livraison gratuite";
 
   const shippingAddress = {
     firstName,

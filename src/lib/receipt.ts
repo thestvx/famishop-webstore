@@ -32,7 +32,7 @@ export function printOrderReceipt(order: any) {
     <tbody>${items}</tbody>
   </table>
   <div class="total">Subtotal: ${Number(order.subtotal || 0).toFixed(2)} ${order.currency}</div>
-  <div class="total">Shipping: ${Number(order.shippingFee || 0).toFixed(2)} ${order.currency}</div>
+  <div class="total">Shipping: ${Number(order.shippingFee || 0) > 0 ? `${Number(order.shippingFee).toFixed(2)} ${order.currency}` : "Livraison gratuite"}</div>
   <div class="total">Total: ${Number(order.total || 0).toFixed(2)} ${order.currency}</div>
   <div class="footer">Thank you for shopping with FamiShop.</div>
   <button onclick="window.print()">Print / Save PDF</button>

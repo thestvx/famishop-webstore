@@ -65,43 +65,8 @@ export async function onRequestPost(context) {
 
   const subtotal = Math.round(subtotalBase * rate * 100) / 100;
   const discount = 0;
-  const shippingItems = incomingItems.map((inc) => {
-    const product = productMap.get(Number(inc.id));
-    return {
-      ...inc,
-      packageSize: (product && (product.package_size || product.packageSize)) || null,
-      package_size: (product && (product.package_size || product.packageSize)) || null,
-      weightGrams: (product && (product.weight_grams || product.weightGrams || (product.prices && product.prices.weightKg ? Math.round(Number(product.prices.weightKg) * 1000) : null))) || null,
-      weight_grams: (product && (product.weight_grams || product.weightGrams || (product.prices && product.prices.weightKg ? Math.round(Number(product.prices.weightKg) * 1000) : null))) || null,
-      weightKg: (product && (product.weight_kg || product.weightKg || (product.prices && product.prices.weightKg))) || null,
-      weight_kg: (product && (product.weight_kg || product.weightKg || (product.prices && product.prices.weightKg))) || null,
-      lengthCm: (product && (product.length_cm || product.lengthCm)) || null,
-      length_cm: (product && (product.length_cm || product.lengthCm)) || null,
-      widthCm: (product && (product.width_cm || product.widthCm)) || null,
-      width_cm: (product && (product.width_cm || product.widthCm)) || null,
-      heightCm: (product && (product.height_cm || product.heightCm)) || null,
-      height_cm: (product && (product.height_cm || product.heightCm)) || null,
-    };
-  });
   const shippingSelection = body?.shipping || {};
-  let shippingBase;
-  try {
-    shippingBase = await resolveShippingBase({
-      country,
-      postalCode: String(customer.postalCode || "").trim(),
-      city,
-      items: shippingItems,
-      selected: {
-        operator: shippingSelection.operator,
-        service: shippingSelection.service,
-        price: shippingSelection.price,
-      },
-      env,
-    });
-  } catch (e) {
-    return json({ error: e?.message || "Shipping quote failed" }, 502);
-  }
-  const shippingFee = Math.round(shippingBase * rate * 100) / 100;
+  const shippingFee = 0;
   const tax = 0;
   const total = Math.round((subtotal - discount + shippingFee + tax) * 100) / 100;
 
@@ -113,7 +78,7 @@ export async function onRequestPost(context) {
   const shippingMethodLabel =
     shippingSelection.label ||
     [shippingSelection.carrier, shippingSelection.service].filter(Boolean).join(" - ") ||
-    "standard";
+    "Livraison gratuite";
   const shippingAddress = {
     firstName,
     lastName,
