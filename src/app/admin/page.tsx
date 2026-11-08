@@ -57,7 +57,13 @@ export default function AdminOverviewPage() {
     return () => clearInterval(id);
   }, [load]);
 
-  const analyticsProduct = products.find((p: any) => isAnalyticsProduct(p));
+  const analyticsProduct = products
+    .filter((p: any) => isAnalyticsProduct(p))
+    .reduce((best: any, p: any) => {
+      const value = Number(p?.prices?.siteVisits) || 0;
+      const bestValue = Number(best?.prices?.siteVisits) || 0;
+      return !best || value > bestValue ? p : best;
+    }, null);
   const realProducts = products.filter((p: any) => !isAnalyticsProduct(p));
 
   const totalProducts = realProducts.length;
@@ -223,8 +229,14 @@ export default function AdminOverviewPage() {
               <div>
                 <p className="text-sm text-black/50">{s.label}</p>
                 <p className="text-2xl font-bold">
-                  {s.prefix || ""}
-                  {s.value.toLocaleString()}
+                  {loading && products.length === 0 ? (
+                    <span className="inline-block h-6 w-14 rounded bg-black/10 animate-pulse" />
+                  ) : (
+                    <>
+                      {s.prefix || ""}
+                      {s.value.toLocaleString()}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
