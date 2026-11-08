@@ -304,7 +304,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
 
   useEffect(() => {
     if (view !== "main") return;
-    const scroller = topRef.current?.closest("main") as HTMLElement | null;
+    const scroller = getScrollParent();
     const onScroll = () => {
       mainScrollRef.current = scroller ? scroller.scrollTop : window.scrollY;
     };
@@ -322,7 +322,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       topRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
     } else if (view === "main" && previous !== "main") {
       const target = mainScrollRef.current;
-      const scroller = topRef.current?.closest("main") as HTMLElement | null;
+      const scroller = getScrollParent();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (scroller) scroller.scrollTo({ top: target, behavior: "auto" });
@@ -408,6 +408,22 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   }, [editId]);
 
   const markDirty = () => setDirty(true);
+
+  const getScrollParent = (): HTMLElement | null => {
+    let el = topRef.current?.parentElement || null;
+    while (el) {
+      const style = window.getComputedStyle(el);
+      if (/(auto|scroll)/.test(style.overflowY)) return el;
+      el = el.parentElement;
+    }
+    return (document.scrollingElement as HTMLElement) || null;
+  };
+
+  const openView = (next: View) => {
+    const scroller = getScrollParent();
+    mainScrollRef.current = scroller ? scroller.scrollTop : window.scrollY;
+    setView(next);
+  };
 
   const primaryImage = images.find((i) => i.status === "done") || null;
 
@@ -1403,15 +1419,15 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
         {/* Details rows */}
         <section className="mb-6 bg-white rounded-2xl border border-black/10 overflow-hidden">
           <h2 className="text-sm font-semibold text-black/70 px-4 pt-4 mb-1">{t("addProduct.details")}</h2>
-           <Row label={t("addProduct.category")} value={categoryPathLabel || (categoryId ? categoryId : "")} onClick={() => setView("category")} />
-           <Row label={originTitle(locale)} value={countryOfOrigin ? originLabel(countryOfOrigin, locale) : ""} onClick={() => setView("origin")} />
-           <Row label={t("addProduct.brand")} value={brand} onClick={() => setView("brand")} />
-          <Row label={t("addProduct.size")} value={size} onClick={() => setView("size")} disabled={!categoryId} />
-          <Row label={t("addProduct.condition")} value={condition ? t(`cond.${condition}`) : ""} onClick={() => setView("condition")} />
-          <Row label={t("addProduct.colors")} value={colors.map((c) => t(`color.${c}`)).join(", ")} onClick={() => setView("color")} />
-          <Row label={t("addProduct.material")} value={materials.map((m) => t(`material.${m}`)).join(", ")} onClick={() => setView("material")} />
-          <Row label={t("addProduct.price")} value={[priceUsd && `${priceUsd} USD`, priceEur && `${priceEur} EUR`, priceDzd && `${priceDzd} DZD`].filter(Boolean).join(" / ")} onClick={() => setView("price")} />
-          <Row label={t("addProduct.packageSize")} value={packageSize ? t(`pkg.${packageSize}`) : ""} onClick={() => setView("package")} />
+           <Row label={t("addProduct.category")} value={categoryPathLabel || (categoryId ? categoryId : "")} onClick={() => openView("category")} />
+           <Row label={originTitle(locale)} value={countryOfOrigin ? originLabel(countryOfOrigin, locale) : ""} onClick={() => openView("origin")} />
+           <Row label={t("addProduct.brand")} value={brand} onClick={() => openView("brand")} />
+          <Row label={t("addProduct.size")} value={size} onClick={() => openView("size")} disabled={!categoryId} />
+          <Row label={t("addProduct.condition")} value={condition ? t(`cond.${condition}`) : ""} onClick={() => openView("condition")} />
+          <Row label={t("addProduct.colors")} value={colors.map((c) => t(`color.${c}`)).join(", ")} onClick={() => openView("color")} />
+          <Row label={t("addProduct.material")} value={materials.map((m) => t(`material.${m}`)).join(", ")} onClick={() => openView("material")} />
+          <Row label={t("addProduct.price")} value={[priceUsd && `${priceUsd} USD`, priceEur && `${priceEur} EUR`, priceDzd && `${priceDzd} DZD`].filter(Boolean).join(" / ")} onClick={() => openView("price")} />
+          <Row label={t("addProduct.packageSize")} value={packageSize ? t(`pkg.${packageSize}`) : ""} onClick={() => openView("package")} />
            <Row label={t("addProduct.stock")} value={stock} onClick={() => {
              setStockInput(stock);
              setStockError("");
