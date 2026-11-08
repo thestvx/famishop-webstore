@@ -9,6 +9,40 @@ import { fetchProduct, fetchProducts, getLocalizedProductTitle } from "@/lib/pro
 import { Product } from "@/types/product.types";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+
+async function trackViewDirect(productId: string | number) {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const id = Number(productId);
+  if (!Number.isFinite(id)) return;
+  try {
+    const { data: product } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+    if (!product) return;
+    const existingPrices =
+      product.prices && typeof product.prices === "object" && !Array.isArray(product.prices)
+        ? product.prices
+        : {};
+    const dailyViews =
+      existingPrices.dailyViews && typeof existingPrices.dailyViews === "object" && !Array.isArray(existingPrices.dailyViews)
+        ? { ...existingPrices.dailyViews }
+        : {};
+    const now = new Date();
+    const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+    const current =
+      product.views != null
+        ? Number(product.views)
+        : existingPrices.views != null
+        ? Number(existingPrices.views)
+        : Object.values(dailyViews).reduce((s: number, v: any) => s + (Number.isFinite(Number(v)) ? Number(v) : 0), 0);
+    const next = (Number.isFinite(current) ? current : 0) + 1;
+    dailyViews[key] = (Number.isFinite(Number(dailyViews[key])) ? Number(dailyViews[key]) : 0) + 1;
+    const prices = { ...existingPrices, views: next, dailyViews };
+    const { error } = await supabase.from("products").update({ views: next, prices }).eq("id", id);
+    if (error) {
+      await supabase.from("products").update({ prices }).eq("id", id);
+    }
+  } catch {}
+}
 
 export default function ProductView({ slug }: { slug?: string[] }) {
   const { locale, t } = useI18n();
@@ -31,7 +65,12 @@ export default function ProductView({ slug }: { slug?: string[] }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId }),
-    }).catch(() => {});
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) await trackViewDirect(productId);
+      })
+      .catch(() => trackViewDirect(productId));
   }, [productId]);
 
   useEffect(() => {
