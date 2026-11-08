@@ -86,7 +86,37 @@ async function findAnchor(supabaseUrl, supabaseKey) {
   );
   if (!legacyRes.ok) return null;
   const legacyRows = await legacyRes.json();
-  return Array.isArray(legacyRows) && legacyRows.length ? legacyRows[0] : null;
+  const legacy = Array.isArray(legacyRows) && legacyRows.length ? legacyRows[0] : null;
+
+  const legacyPrices =
+    legacy && legacy.prices && typeof legacy.prices === "object" && !Array.isArray(legacy.prices)
+      ? legacy.prices
+      : {};
+  const seedPrices = { __analytics: true };
+  if (legacyPrices.siteVisits != null) seedPrices.siteVisits = legacyPrices.siteVisits;
+  if (legacyPrices.siteDailyViews && typeof legacyPrices.siteDailyViews === "object") {
+    seedPrices.siteDailyViews = legacyPrices.siteDailyViews;
+  }
+  const createRes = await fetch(`${supabaseUrl}/rest/v1/products`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      title: "__famishop_site_stats__",
+      price: 0,
+      status: "draft",
+      prices: seedPrices,
+    }),
+  });
+  if (createRes.ok) {
+    const created = await createRes.json().catch(() => []);
+    if (Array.isArray(created) && created.length) return created[0];
+  }
+  return legacy;
 }
 
 function sleep(ms) {

@@ -15,12 +15,30 @@ async function findAnchor() {
     .limit(1);
   if (Array.isArray(analytics) && analytics.length) return analytics[0];
 
-  const { data: legacy } = await supabase
+  const { data: legacyRows } = await supabase
     .from("products")
     .select("id,prices")
     .order("id", { ascending: true })
     .limit(1);
-  return Array.isArray(legacy) && legacy.length ? legacy[0] : null;
+  const legacy = Array.isArray(legacyRows) && legacyRows.length ? legacyRows[0] : null;
+
+  const legacyPrices =
+    legacy && legacy.prices && typeof legacy.prices === "object" && !Array.isArray(legacy.prices)
+      ? legacy.prices
+      : {};
+  const seedPrices: Record<string, any> = { __analytics: true };
+  if (legacyPrices.siteVisits != null) seedPrices.siteVisits = legacyPrices.siteVisits;
+  if (legacyPrices.siteDailyViews && typeof legacyPrices.siteDailyViews === "object") {
+    seedPrices.siteDailyViews = legacyPrices.siteDailyViews;
+  }
+
+  const { data: created } = await supabase
+    .from("products")
+    .insert({ title: "__famishop_site_stats__", price: 0, status: "draft", prices: seedPrices })
+    .select("id,prices")
+    .single();
+  if (created) return created;
+  return legacy;
 }
 
 export async function POST(req: Request) {
