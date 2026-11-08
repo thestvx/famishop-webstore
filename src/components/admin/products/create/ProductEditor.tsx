@@ -639,11 +639,20 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
       };
 
       if (editId) {
-        // preserve rating/discount
-        const { data: existing } = await supabase.from("products").select("rating,discount").eq("id", editId).single();
+        // preserve rating/discount and analytics/reviews stored in prices
+        const { data: existing } = await supabase
+          .from("products")
+          .select("rating,discount,prices")
+          .eq("id", editId)
+          .single();
         if (existing) {
           fullPayload.rating = existing.rating ?? 0;
           fullPayload.discount = existing.discount ?? { amount: 0, percentage: 0 };
+          const oldPrices =
+            existing.prices && typeof existing.prices === "object" && !Array.isArray(existing.prices)
+              ? existing.prices
+              : {};
+          fullPayload.prices = { ...oldPrices, ...fullPayload.prices };
         }
       }
 

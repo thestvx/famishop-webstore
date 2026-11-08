@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { newArrivalsData, topSellingData, relatedProductData } from "@/lib/data/products";
 import { Package, ShoppingCart, Users, DollarSign, Eye, TrendingUp } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -17,39 +17,44 @@ export default function AdminOverviewPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const load = useCallback(async (showLoading: boolean) => {
+    if (showLoading) setLoading(true);
+    if (!isSupabaseConfigured() || !supabase) {
+      setProducts(fallbackProducts);
+      setOrders([]);
+      setCustomers([]);
+      setLoading(false);
+      setLastUpdated(new Date());
+      return;
+    }
+    try {
+      const [prodRes, orderRes, custRes] = await Promise.all([
+        supabase.from("products").select("*").order("created_at", { ascending: false }),
+        supabase.from("orders").select("*"),
+        supabase.from("customers").select("*"),
+      ]);
+      if (prodRes.data) setProducts(prodRes.data);
+      if (orderRes.data) setOrders(orderRes.data);
+      if (custRes.data) setCustomers(custRes.data);
+    } catch (e) {
+      // keep empty/partial
+    } finally {
+      setLoading(false);
+      setLastUpdated(new Date());
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    async function load() {
-      setLoading(true);
-      if (!isSupabaseConfigured() || !supabase) {
-        setProducts(fallbackProducts);
-        setOrders([]);
-        setCustomers([]);
-        setLoading(false);
-        return;
+    load(true);
+    const id = setInterval(() => {
+      if (typeof document === "undefined" || document.visibilityState === "visible") {
+        load(false);
       }
-      try {
-        const [prodRes, orderRes, custRes] = await Promise.all([
-          supabase.from("products").select("*").order("created_at", { ascending: false }),
-          supabase.from("orders").select("*"),
-          supabase.from("customers").select("*"),
-        ]);
-        if (!active) return;
-        if (prodRes.data) setProducts(prodRes.data);
-        if (orderRes.data) setOrders(orderRes.data);
-        if (custRes.data) setCustomers(custRes.data);
-      } catch (e) {
-        // keep empty/partial
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      active = false;
-    };
-  }, []);
+    }, 20000);
+    return () => clearInterval(id);
+  }, [load]);
 
   const totalProducts = products.length;
   const totalOrders = orders.length;
@@ -63,6 +68,26 @@ export default function AdminOverviewPage() {
     const vb = b.views != null ? Number(b.views) : b.prices?.views != null ? Number(b.prices.views) : 0;
     return vb - va;
   })[0];
+
+  const siteStatsProduct = products.find(
+    (p: any) =>
+      p.prices &&
+      typeof p.prices === "object" &&
+      (p.prices.siteVisits != null || (p.prices.siteDailyViews && typeof p.prices.siteDailyViews === "object"))
+  );
+  const siteDailyViews: Record<string, number> =
+    siteStatsProduct?.prices?.siteDailyViews &&
+    typeof siteStatsProduct.prices.siteDailyViews === "object" &&
+    !Array.isArray(siteStatsProduct.prices.siteDailyViews)
+      ? siteStatsProduct.prices.siteDailyViews
+      : {};
+  const siteTotal = siteStatsProduct?.prices?.siteVisits != null
+    ? Number(siteStatsProduct.prices.siteVisits)
+    : Object.values(siteDailyViews).reduce(
+        (s: number, v: any) => s + (Number.isFinite(Number(v)) ? Number(v) : 0),
+        0
+      );
+  const storeVisits = siteStatsProduct ? siteTotal : totalViews;
 
   // count unique customers by email/id if possible
   const uniqueCustomers = new Set();
@@ -93,7 +118,7 @@ export default function AdminOverviewPage() {
     { label: "Total Orders", value: totalOrders, icon: ShoppingCart, color: "bg-green-50 text-green-600" },
     { label: "Customers", value: totalCustomers, icon: Users, color: "bg-purple-50 text-purple-600" },
     { label: "Revenue", value: revenue, icon: DollarSign, color: "bg-orange-50 text-orange-600", prefix: "" },
-    { label: "Store Visits", value: totalViews, icon: Eye, color: "bg-cyan-50 text-cyan-600", prefix: "" },
+    { label: "Store Visits", value: storeVisits, icon: Eye, color: "bg-cyan-50 text-cyan-600", prefix: "" },
   ];
 
   const topViewed = [...products]
@@ -136,10 +161,12 @@ export default function AdminOverviewPage() {
     const d = new Date();
     d.setUTCDate(d.getUTCDate() - (13 - i));
     const key = dayKey(d);
-    const count = products.reduce((sum: number, p: any) => {
-      const v = Number(getDailyViews(p)[key] || 0);
-      return sum + (Number.isFinite(v) ? v : 0);
-    }, 0);
+    const count = siteStatsProduct
+      ? Number(siteDailyViews[key] || 0)
+      : products.reduce((sum: number, p: any) => {
+          const v = Number(getDailyViews(p)[key] || 0);
+          return sum + (Number.isFinite(v) ? v : 0);
+        }, 0);
     return {
       key,
       date: d,
@@ -157,9 +184,24 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Overview</h1>
-        <p className="text-sm text-black/50">Welcome to FamiShop admin dashboard.</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Overview</h1>
+          <p className="text-sm text-black/50">
+            Welcome to FamiShop admin dashboard.
+            {lastUpdated && (
+              <span className="ml-2 text-black/40">
+                Updated {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </p>
+        </div>
+        <button
+          onClick={() => load(false)}
+          className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium hover:bg-black hover:text-white transition-colors"
+        >
+          Refresh
+        </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((s) => {

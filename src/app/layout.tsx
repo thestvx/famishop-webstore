@@ -7,6 +7,7 @@ import RegionModal from "@/components/common/RegionModal";
 import PixelPreloader from "@/components/common/PixelPreloader";
 import FirebaseAnalytics from "@/components/common/FirebaseAnalytics";
 import StorefrontShell from "@/components/layout/StorefrontShell";
+import SiteVisitTracker from "@/components/common/SiteVisitTracker";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev"),
@@ -78,6 +79,7 @@ export default function RootLayout({
         />
         <HolyLoader color="#868686" />
         <Providers>
+          <SiteVisitTracker />
           <FirebaseAnalytics />
           <PixelPreloader />
           <StorefrontShell>{children}</StorefrontShell>
