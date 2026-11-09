@@ -30,29 +30,29 @@ const getData = (t: (key: string) => string): NavMenu => [
     type: "MenuList",
     children: [
       {
-        id: 11,
-        label: t("nav.mensClothes"),
-        url: "/shop#men-clothes",
-        description: t("nav.mensClothesDesc"),
-      },
-      {
-        id: 12,
-        label: t("nav.womensClothes"),
-        url: "/shop#women-clothes",
-        description: t("nav.womensClothesDesc"),
-      },
-      {
-        id: 13,
-        label: t("nav.kidsClothes"),
-        url: "/shop#kids-clothes",
-        description: t("nav.kidsClothesDesc"),
-      },
-      {
-        id: 14,
-        label: t("nav.bagsShoes"),
-        url: "/shop#bag-shoes",
-        description: t("nav.bagsShoesDesc"),
-      },
+         id: 11,
+         label: t("nav.mensClothes"),
+         url: "/shop#vetements-homme",
+         description: t("nav.mensClothesDesc"),
+       },
+       {
+         id: 12,
+         label: t("nav.womensClothes"),
+         url: "/shop#vetements-femme",
+         description: t("nav.womensClothesDesc"),
+       },
+       {
+         id: 13,
+         label: t("nav.kidsClothes"),
+         url: "/shop#vetements-enfants",
+         description: t("nav.kidsClothesDesc"),
+       },
+       {
+         id: 14,
+         label: t("nav.bagsShoes"),
+         url: "/shop#sacs-chaussures",
+         description: t("nav.bagsShoesDesc"),
+       },
     ],
   },
   {

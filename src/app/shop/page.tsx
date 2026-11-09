@@ -23,6 +23,8 @@ import { Product } from "@/types/product.types";
 
 const PAGE_SIZE = 9;
 
+const HIDDEN_CATEGORY_ROOTS = new Set(["home", "electronics", "books-media", "leisure", "sports"]);
+
 function uniqueSorted(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 }
@@ -40,7 +42,7 @@ function matchesCategory(product: Product, categoryId: string, tree: CategoryNod
   if (node.name) names.add(node.name.toLowerCase());
   if (node.nameTranslations) {
     Object.values(node.nameTranslations).forEach((name) => {
-      if (name) names.add(name.toLowerCase());
+      if (name) names.add(name.toLowerCase().trim());
     });
   }
 
@@ -49,9 +51,8 @@ function matchesCategory(product: Product, categoryId: string, tree: CategoryNod
 
   const productPath = (product.categoryPath || "").toLowerCase();
   if (productPath) {
-    for (const name of Array.from(names)) {
-      if (name && productPath.includes(name)) return true;
-    }
+    const segments = productPath.split(/[>\/,|]/).map((segment) => segment.trim()).filter(Boolean);
+    if (segments.some((segment) => names.has(segment))) return true;
   }
 
   return false;
@@ -75,14 +76,20 @@ export default function ShopPage() {
   useEffect(() => {
     const applyHash = () => {
       const hash = window.location.hash.replace(/^#/, "").toLowerCase();
-      const categoryMap: Record<string, string> = {
-        "men-clothes": "men",
-        "women-clothes": "women",
-        "kids-clothes": "kids",
-        men: "men",
-        women: "women",
-        kids: "kids",
-      };
+    const categoryMap: Record<string, string> = {
+      "men-clothes": "men",
+      "women-clothes": "women",
+      "kids-clothes": "kids",
+      "vetements-homme": "men",
+      "vetements-femme": "women",
+      "vetements-enfants": "kids",
+      men: "men",
+      women: "women",
+      kids: "kids",
+      hommes: "men",
+      femmes: "women",
+      enfants: "kids",
+    };
       const mapped = categoryMap[hash];
       if (mapped) setSelectedCategory(mapped);
     };
@@ -97,7 +104,10 @@ export default function ShopPage() {
       .then(([loadedProducts, loadedTree]) => {
         if (!active) return;
         setProducts(loadedProducts);
-        setTree(loadedTree.length ? loadedTree : CATEGORY_TREE);
+        const visibleTree = (loadedTree.length ? loadedTree : CATEGORY_TREE).filter(
+          (node) => !HIDDEN_CATEGORY_ROOTS.has(node.id)
+        );
+        setTree(visibleTree);
         const highest = loadedProducts.reduce((max, product) => Math.max(max, product.price), 0);
         setMaxPrice(highest);
         setPriceRange((current) => (priceTouched ? current : [0, Math.ceil(highest)]));
