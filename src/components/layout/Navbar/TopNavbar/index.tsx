@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { NavMenu } from "../navbar.types";
 import { MenuList } from "./MenuList";
 import {
@@ -18,6 +18,10 @@ import CartBtn from "./CartBtn";
 import LocaleSwitcher from "@/components/common/LocaleSwitcher";
 import CurrencySwitcher from "@/components/common/CurrencySwitcher";
 import { useI18n, useTranslations } from "@/lib/i18n";
+import { fetchProducts } from "@/lib/productsStore";
+import { getLocalizedProductTitle } from "@/lib/productsStore";
+import { Product } from "@/types/product.types";
+import ProductImage from "@/components/common/ProductImage";
 
 const getData = (t: (key: string) => string): NavMenu => [
   {
@@ -76,10 +80,47 @@ const getData = (t: (key: string) => string): NavMenu => [
 
 const TopNavbar = () => {
   const t = useTranslations();
-  const { region, setRegion } = useI18n() as any;
+  const { region, setRegion, locale } = useI18n() as any;
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLFormElement>(null);
   const data = getData(t);
+
+  useEffect(() => {
+    let active = true;
+    fetchProducts()
+      .then((loaded) => {
+        if (active) setProducts(loaded);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return products
+      .filter((product) => {
+        const title = getLocalizedProductTitle(product, locale || "en") || product.title || "";
+        const haystack = [title, product.title, product.brand].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(q);
+      })
+      .slice(0, 8);
+  }, [products, searchTerm, locale]);
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const query = searchTerm.trim();
@@ -121,7 +162,7 @@ const TopNavbar = () => {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <form onSubmit={submitSearch} className="hidden lg:block">
+        <form onSubmit={submitSearch} className="hidden lg:block relative" ref={searchRef}>
           <InputGroup className="flex bg-[#F0F0F0] w-[320px] xl:w-[380px]">
             <InputGroup.Text>
               <Image
@@ -137,11 +178,43 @@ const TopNavbar = () => {
               type="search"
               name="search"
               value={searchTerm}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                setSearchTerm(event.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
               placeholder={t("common.searchPlaceholder")}
               className="bg-transparent placeholder:text-black/40"
             />
           </InputGroup>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-black/10 bg-white shadow-lg max-h-80 overflow-auto">
+              {suggestions.map((product) => {
+                const title = getLocalizedProductTitle(product, locale || "en") || product.title || "";
+                const slug = title.trim().replace(/\s+/g, "-") || "product";
+                return (
+                  <Link
+                    key={product.id}
+                    href={`/shop/product/${product.id}/${encodeURIComponent(slug)}`}
+                    onClick={() => {
+                      setShowSuggestions(false);
+                      setSearchTerm("");
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 hover:bg-[#F0F0F0]"
+                  >
+                    <ProductImage
+                      src={product.srcUrl}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-md object-contain bg-[#F0EEED]"
+                      alt={title}
+                    />
+                    <span className="text-sm line-clamp-1">{title}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </form>
         <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
           <div className="hidden xl:flex items-center gap-2">

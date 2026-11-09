@@ -73,6 +73,25 @@ export default function ShopPage() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    const applyHash = () => {
+      const hash = window.location.hash.replace(/^#/, "").toLowerCase();
+      const categoryMap: Record<string, string> = {
+        "men-clothes": "men",
+        "women-clothes": "women",
+        "kids-clothes": "kids",
+        men: "men",
+        women: "women",
+        kids: "kids",
+      };
+      const mapped = categoryMap[hash];
+      if (mapped) setSelectedCategory(mapped);
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     Promise.all([fetchProducts(), fetchCategoryTree()])
       .then(([loadedProducts, loadedTree]) => {

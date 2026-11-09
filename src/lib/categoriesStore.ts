@@ -73,7 +73,25 @@ export async function loadCategoriesForAdmin(): Promise<{
     }
     return { tree: CATEGORY_TREE, ready: true, error: null };
   }
-  const tree = buildCategoryTree(rows);
+  // Keep newly introduced static categories available even in already-seeded databases.
+  if (supabase) {
+    const existingIds = new Set(rows.map((row) => row.id));
+    const missing = flattenCategoryTree(CATEGORY_TREE).filter((row) => !existingIds.has(row.id));
+    if (missing.length > 0) {
+      await supabase.from(TABLE).insert(
+        missing.map((row) => ({
+          id: row.id,
+          name_key: row.nameKey,
+          name_translations: row.nameTranslations || {},
+          parent_id: row.parentId,
+          sort_order: row.sortOrder,
+        }))
+      );
+    }
+  }
+  const refreshed = await fetchCategoryRows();
+  const finalRows = refreshed.rows && refreshed.rows.length > 0 ? refreshed.rows : rows;
+  const tree = buildCategoryTree(finalRows);
   return { tree: tree.length > 0 ? tree : CATEGORY_TREE, ready: true, error: null };
 }
 
