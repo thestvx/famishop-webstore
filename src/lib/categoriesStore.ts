@@ -42,7 +42,27 @@ export async function fetchCategoryRows(): Promise<{ rows: FlatCategory[] | null
 export async function fetchCategoryTree(): Promise<CategoryNode[]> {
   const { rows } = await fetchCategoryRows();
   if (!rows || rows.length === 0) return CATEGORY_TREE;
-  const tree = buildCategoryTree(rows);
+
+  // Keep newly introduced static categories available in storefront and product editor.
+  if (supabase) {
+    const existingIds = new Set(rows.map((row) => row.id));
+    const missing = flattenCategoryTree(CATEGORY_TREE).filter((row) => !existingIds.has(row.id));
+    if (missing.length > 0) {
+      await supabase.from(TABLE).insert(
+        missing.map((row) => ({
+          id: row.id,
+          name_key: row.nameKey,
+          name_translations: row.nameTranslations || {},
+          parent_id: row.parentId,
+          sort_order: row.sortOrder,
+        }))
+      );
+    }
+  }
+
+  const refreshed = await fetchCategoryRows();
+  const finalRows = refreshed.rows && refreshed.rows.length > 0 ? refreshed.rows : rows;
+  const tree = buildCategoryTree(finalRows);
   return tree.length > 0 ? tree : CATEGORY_TREE;
 }
 
