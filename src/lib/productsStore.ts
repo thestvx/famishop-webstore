@@ -167,6 +167,7 @@ function normalizeProduct(row: AnyRecord): Product | null {
     shippingCategory: typeof row.shipping_category === "string" ? row.shipping_category : null,
     stock: row.stock != null ? Number(row.stock) : null,
     status: typeof row.status === "string" ? row.status : null,
+    sold: Boolean(row.sold || (row.prices && (row.prices as any).sold)),
     prices,
   };
 }

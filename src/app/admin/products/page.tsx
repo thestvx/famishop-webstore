@@ -17,6 +17,7 @@ type Prod = {
   gallery?: string[];
   created_at?: string;
   status?: string;
+  prices?: any;
 };
 
 export default function AdminProductsPage() {
@@ -49,6 +50,21 @@ export default function AdminProductsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  async function toggleSold(p: Prod) {
+    if (!isSupabaseConfigured() || !supabase || !p.id) return;
+    const currentPrices = p.prices && typeof p.prices === "object" ? { ...p.prices } : {};
+    const nextSold = !(currentPrices.sold === true);
+    const { error } = await supabase
+      .from("products")
+      .update({ prices: { ...currentPrices, sold: nextSold } })
+      .eq("id", p.id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    await load();
+  }
 
   async function remove(p: Prod) {
     if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
@@ -133,6 +149,13 @@ export default function AdminProductsPage() {
                         </button>
                         <button onClick={() => toggleActive(p)} className="p-1.5 rounded hover:bg-gray-100 text-sm" aria-label="toggle">
                           {p.status === "draft" ? "Activate" : "Deactivate"}
+                        </button>
+                        <button
+                          onClick={() => toggleSold(p)}
+                          className={`px-2 py-1 rounded text-xs font-semibold ${p.prices?.sold === true ? "bg-red-600 text-white" : "bg-gray-100 text-black/70 hover:bg-gray-200"}`}
+                          aria-label="toggle sold"
+                        >
+                          Vendu
                         </button>
                         <button onClick={() => remove(p)} className="p-1.5 rounded hover:bg-gray-100 text-red-500" aria-label="delete">
                           <Trash2 size={16} />

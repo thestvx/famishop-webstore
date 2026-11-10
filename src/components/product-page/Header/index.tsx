@@ -31,11 +31,16 @@ const Header = ({ data }: { data: Product }) => {
            >
              {title}
            </h1>
-           <div className="mb-3 text-left">
-             <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-semibold animate-pulse">
-               Livraison gratuite
-             </span>
-           </div>
+            <div className="mb-3 text-left flex items-center gap-2 flex-wrap">
+              <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-semibold animate-pulse">
+                Livraison gratuite
+              </span>
+              {(data as any).sold && (
+                <span className="inline-block px-3 py-1 rounded-full bg-red-600 text-white text-xs sm:text-sm font-bold uppercase tracking-wider">
+                  Vendu
+                </span>
+              )}
+            </div>
           <div className="flex items-center mb-3 sm:mb-3.5">
             <Rating
               initialValue={data.rating}

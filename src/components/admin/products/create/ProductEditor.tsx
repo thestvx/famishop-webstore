@@ -256,6 +256,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
   const price = priceEur || priceUsd || priceDzd;
   const [packageSize, setPackageSize] = useState("");
   const [stock, setStock] = useState("");
+  const [sold, setSold] = useState(false);
   const [stockInput, setStockInput] = useState("");
   const [stockModalOpen, setStockModalOpen] = useState(false);
   const [stockError, setStockError] = useState("");
@@ -365,6 +366,7 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           setMaterials(Array.isArray(data.materials) ? data.materials : []);
           setPackageSize(data.package_size || "");
           setStock(data.stock != null ? String(data.stock) : "");
+          setSold(Boolean((data.prices as any)?.sold || data.sold));
           const rawOrigin =
             data.country_of_origin != null
               ? String(data.country_of_origin)
@@ -688,9 +690,10 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           USD: priceUsd ? Number(priceUsd) : null,
           EUR: priceEur ? Number(priceEur) : null,
           DZD: null,
-          weightKg: weightKg.trim() ? Number(weightKg) : null,
-          countryOfOrigin: countryOfOrigin || null,
-        },
+           weightKg: weightKg.trim() ? Number(weightKg) : null,
+           countryOfOrigin: countryOfOrigin || null,
+           sold,
+         },
         src_url: primaryUrl,
         gallery: urls,
         rating: 0,
@@ -1428,11 +1431,12 @@ export default function ProductEditor({ open = true, embedded = false, editId: e
           <Row label={t("addProduct.material")} value={materials.map((m) => t(`material.${m}`)).join(", ")} onClick={() => openView("material")} />
           <Row label={t("addProduct.price")} value={[priceUsd && `${priceUsd} USD`, priceEur && `${priceEur} EUR`, priceDzd && `${priceDzd} DZD`].filter(Boolean).join(" / ")} onClick={() => openView("price")} />
           <Row label={t("addProduct.packageSize")} value={packageSize ? t(`pkg.${packageSize}`) : ""} onClick={() => openView("package")} />
-           <Row label={t("addProduct.stock")} value={stock} onClick={() => {
-             setStockInput(stock);
-             setStockError("");
-             setStockModalOpen(true);
-           }} />
+            <Row label={t("addProduct.stock")} value={stock} onClick={() => {
+              setStockInput(stock);
+              setStockError("");
+              setStockModalOpen(true);
+            }} />
+            <Row label="Vendu" value={sold ? "Vendu" : "Disponible"} onClick={() => { setSold((prev) => !prev); markDirty(); }} />
         </section>
 
         <section className="mb-6 bg-white rounded-2xl border border-black/10 p-4">

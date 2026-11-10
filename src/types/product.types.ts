@@ -42,6 +42,7 @@ export type Product = {
   shippingCategory?: string | null;
   stock?: number | null;
   status?: string | null;
+  sold?: boolean;
   prices?: PriceMap | null;
   countryOfOrigin?: string | null;
   reviews?: Review[] | null;

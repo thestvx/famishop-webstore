@@ -7,6 +7,7 @@ import { Product } from "@/types/product.types";
 import { useI18n } from "@/lib/i18n";
 import ProductImage from "@/components/common/ProductImage";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
+import { cn } from "@/lib/utils";
 
 type ProductCardProps = {
   data: Product;
@@ -15,6 +16,7 @@ type ProductCardProps = {
 const ProductCard = ({ data }: ProductCardProps) => {
   const { formatPrice, locale } = useI18n();
   const title = getLocalizedProductTitle(data, locale) || "";
+  const sold = Boolean((data as any).sold);
   const rating = Number.isFinite(data.rating) ? data.rating : 0;
   const discount = data.discount || { amount: 0, percentage: 0 };
   const slug = title.trim().replace(/\s+/g, "-") || "product";
@@ -24,15 +26,22 @@ const ProductCard = ({ data }: ProductCardProps) => {
       href={`/shop/product/${data.id}/${encodeURIComponent(slug)}`}
       className="flex flex-col h-full w-full"
     >
-      <div className="bg-[#F0EEED] rounded-[13px] lg:rounded-[20px] w-full aspect-square mb-2.5 xl:mb-4 overflow-hidden">
+      <div className="relative bg-[#F0EEED] rounded-[13px] lg:rounded-[20px] w-full aspect-square mb-2.5 xl:mb-4 overflow-hidden">
         <ProductImage
           src={data.srcUrl}
           width={295}
           height={295}
-          className="rounded-md w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500"
+          className={cn("rounded-md w-full h-full object-contain p-2 transition-transform duration-500", sold ? "grayscale opacity-70" : "hover:scale-105")}
           alt={title}
           loading="lazy"
         />
+        {sold && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+            <span className="rotate-[-16deg] rounded-xl border-4 border-white bg-red-600 px-4 py-1.5 text-lg font-black uppercase tracking-widest text-white shadow-xl">
+              Vendu
+            </span>
+          </div>
+        )}
       </div>
       <div className="flex flex-col flex-1">
        <strong className="text-left text-black xl:text-xl line-clamp-2 min-h-[2.75rem] xl:min-h-[3.25rem] leading-snug mb-1">

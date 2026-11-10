@@ -19,7 +19,8 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
 
   const title = getLocalizedProductTitle(data, locale) || t("product.untitled");
 
-  const outOfStock = data.stock === 0;
+  const sold = (data as any).sold === true;
+  const outOfStock = data.stock === 0 || sold;
   const handleClick = () => {
     if (outOfStock) return;
     if (data.stock != null && data.quantity > data.stock) return;
@@ -59,7 +60,7 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="inline-block"
       >
-        {outOfStock ? t("product.outOfStock") : t("product.addToCart")}
+        {sold ? "Vendu" : outOfStock ? t("product.outOfStock") : t("product.addToCart")}
       </motion.span>
     </motion.button>
   );
