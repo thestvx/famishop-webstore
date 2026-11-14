@@ -33,6 +33,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
            { id: "women-jackets", nameKey: "cat.jackets" },
            { id: "women-ensemble", nameKey: "cat.ensemble" },
            { id: "women-pyjama", nameKey: "cat.pyjama" },
+           { id: "women-pull", nameKey: "cat.pull" },
          ],
       },
       { id: "women-shoes", nameKey: "cat.shoes" },
@@ -65,6 +66,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
            { id: "men-jackets", nameKey: "cat.jackets" },
            { id: "men-ensemble", nameKey: "cat.ensemble" },
            { id: "men-pyjama", nameKey: "cat.pyjama" },
+           { id: "men-pull", nameKey: "cat.pull" },
          ],
       },
       { id: "men-shoes", nameKey: "cat.shoes" },
@@ -78,6 +80,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
        { id: "kids-clothing", nameKey: "cat.clothing", children: [
          { id: "kids-ensemble", nameKey: "cat.ensemble" },
          { id: "kids-pyjama", nameKey: "cat.pyjama" },
+         { id: "kids-pull", nameKey: "cat.pull" },
        ] },
       { id: "kids-shoes", nameKey: "cat.shoes" },
       { id: "kids-toys", nameKey: "cat.toys" },
