@@ -116,7 +116,7 @@ const TopNavbar = () => {
     return products
       .filter((product) => {
         const title = getLocalizedProductTitle(product, locale || "en") || product.title || "";
-        const haystack = [title, product.title, product.brand].filter(Boolean).join(" ").toLowerCase();
+        const haystack = [String(product.id), `FS${product.id}`, title, product.title, product.brand].filter(Boolean).join(" ").toLowerCase();
         return haystack.includes(q);
       })
       .slice(0, 8);

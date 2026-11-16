@@ -15,6 +15,8 @@ function readQuery(): string {
 function matchesQuery(product: Product, query: string): boolean {
   if (!query) return true;
   const haystack = [
+    String(product.id),
+    `FS${product.id}`,
     product.title,
     product.brand,
     product.category,

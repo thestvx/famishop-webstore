@@ -36,7 +36,7 @@ const PhotoSection = ({ data }: { data: Product }) => {
         const index = images.indexOf(current);
         return images[(index + 1) % images.length];
       });
-    }, 1000);
+    }, 3000);
     return () => clearInterval(timer);
   }, [images]);
 
