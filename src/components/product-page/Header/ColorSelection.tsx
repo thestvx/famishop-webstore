@@ -57,29 +57,14 @@ const ColorSelection = ({ colors }: { colors: string[] }) => {
       </span>
       <div className="flex items-center flex-wrap gap-3 sm:gap-4">
         {colors.map((color) => {
-          const selected = colorSelection.name === color;
           return (
-            <button
+            <div
               key={color}
-              type="button"
               aria-label={labelFor(color)}
-              aria-pressed={selected}
               title={labelFor(color)}
-              className={cn(
-                "rounded-full w-9 sm:w-10 h-9 sm:h-10 flex items-center justify-center border border-black/10 transition-transform hover:scale-105",
-                selected && "ring-2 ring-offset-2 ring-black"
-              )}
+              className="rounded-full w-9 sm:w-10 h-9 sm:h-10 border border-black/10"
               style={{ backgroundColor: COLOR_HEX[color] || "#D1D5DB" }}
-              onClick={() =>
-                dispatch(setColorSelection({ name: color, code: COLOR_HEX[color] || "#D1D5DB" }))
-              }
-            >
-              {selected && (
-                <IoMdCheckmark
-                  className={cn("text-base", LIGHT_COLORS.includes(color) ? "text-black" : "text-white")}
-                />
-              )}
-            </button>
+            />
           );
         })}
       </div>

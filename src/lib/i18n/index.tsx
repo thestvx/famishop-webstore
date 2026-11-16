@@ -573,7 +573,7 @@ const translations: Record<Locale, Record<string, string>> = {
      "product.tabReviews": "Avis et notes",
      "product.tabFaq": "FAQ",
      "product.addToCart": "Ajouter au panier",
-     "product.selectColors": "Choisir les couleurs",
+      "product.selectColors": "Couleurs disponibles",
      "product.chooseSize": "Choisir la taille",
      "product.oneSize": "Taille unique",
      "product.months": "mois",
