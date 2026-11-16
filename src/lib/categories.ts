@@ -131,12 +131,11 @@ export function isLeaf(node: CategoryNode): boolean {
 }
 
 export function getSizeType(categoryId: string | null): "clothing" | "shoes" | "hats" | "none" {
-  if (!categoryId) return "none";
+  if (!categoryId) return "clothing";
   const id = categoryId.toLowerCase();
   if (id.includes("shoes")) return "shoes";
   if (id.includes("hats")) return "hats";
-  if (id.includes("clothing") || id.includes("tshirt") || id.includes("shirts") || id.includes("hoodies") || id.includes("jeans") || id.includes("shorts") || id.includes("dresses") || id.includes("jackets")) return "clothing";
-  return "none";
+  return "clothing";
 }
 
 export function getLocalizedCategoryName(

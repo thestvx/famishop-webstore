@@ -63,7 +63,13 @@ export default function AdminProductsPage() {
       alert(error.message);
       return;
     }
-    await load();
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.id === p.id
+          ? { ...item, prices: { ...currentPrices, sold: nextSold } }
+          : item
+      )
+    );
   }
 
   async function remove(p: Prod) {
@@ -135,8 +141,11 @@ export default function AdminProductsPage() {
                     <td className="py-3 px-4">{p.price}</td>
                     <td className="py-3 px-4">
                       {p.src_url ? (
-                        <div className="w-12 h-12 rounded bg-[#F0EEED] overflow-hidden flex items-center justify-center">
+                        <div className="relative group w-12 h-12 rounded bg-[#F0EEED] overflow-hidden flex items-center justify-center">
                           <img src={p.src_url} alt={p.title} className="w-full h-full object-contain p-0.5" />
+                          <div className="hidden group-hover:block absolute left-full top-0 ml-2 z-50 w-56 h-56 rounded-xl border border-black/10 bg-white shadow-2xl overflow-hidden">
+                            <img src={p.src_url} alt={p.title} className="w-full h-full object-contain p-2" />
+                          </div>
                         </div>
                       ) : (
                         "-"
