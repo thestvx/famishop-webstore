@@ -29,6 +29,17 @@ const PhotoSection = ({ data }: { data: Product }) => {
     setSelected(images[0]);
   }, [images]);
 
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setSelected((current) => {
+        const index = images.indexOf(current);
+        return images[(index + 1) % images.length];
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [images]);
+
   const activeImage = images.includes(selected) ? selected : images[0];
 
   const handleZoomMove = (event: React.MouseEvent<HTMLDivElement>) => {

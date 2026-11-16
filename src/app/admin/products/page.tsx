@@ -138,7 +138,7 @@ export default function AdminProductsPage() {
               ) : (
                 products.map((p) => (
                   <tr key={p.id} className="border-b border-black/5 hover:bg-[#FAFAFA]">
-                    <td className="py-3 px-4">{p.id}</td>
+                    <td className="py-3 px-4 font-mono">FS{p.id}</td>
                     <td className="py-3 px-4">{p.title}</td>
                     <td className="py-3 px-4">{p.price}</td>
                     <td className="py-3 px-4">
