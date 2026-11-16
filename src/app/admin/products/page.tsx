@@ -30,6 +30,8 @@ export default function AdminProductsPage() {
   const [uploading, setUploading] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editId, setEditId] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewPos, setPreviewPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   async function load() {
     setLoading(true);
@@ -141,11 +143,18 @@ export default function AdminProductsPage() {
                     <td className="py-3 px-4">{p.price}</td>
                     <td className="py-3 px-4">
                       {p.src_url ? (
-                        <div className="relative group w-12 h-12 rounded bg-[#F0EEED] overflow-hidden flex items-center justify-center">
-                          <img src={p.src_url} alt={p.title} className="w-full h-full object-contain p-0.5" />
-                          <div className="hidden group-hover:block absolute left-full top-0 ml-2 z-50 w-56 h-56 rounded-xl border border-black/10 bg-white shadow-2xl overflow-hidden">
-                            <img src={p.src_url} alt={p.title} className="w-full h-full object-contain p-2" />
-                          </div>
+                        <div className="w-12 h-12 rounded bg-[#F0EEED] flex items-center justify-center">
+                          <img
+                            src={p.src_url}
+                            alt={p.title}
+                            className="w-full h-full object-contain p-0.5 rounded cursor-zoom-in"
+                            onMouseEnter={(e) => {
+                              setPreviewImage(p.src_url || null);
+                              setPreviewPos({ x: e.clientX, y: e.clientY });
+                            }}
+                            onMouseMove={(e) => setPreviewPos({ x: e.clientX, y: e.clientY })}
+                            onMouseLeave={() => setPreviewImage(null)}
+                          />
                         </div>
                       ) : (
                         "-"
@@ -179,6 +188,15 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
+
+      {previewImage && (
+        <div
+          className="fixed z-[100] pointer-events-none w-64 h-64 rounded-2xl border border-black/10 bg-white shadow-2xl overflow-hidden"
+          style={{ left: Math.min(previewPos.x + 16, window.innerWidth - 280), top: Math.min(previewPos.y + 16, window.innerHeight - 280) }}
+        >
+          <img src={previewImage} alt="preview" className="w-full h-full object-contain p-2" />
+        </div>
+      )}
 
       <AnimatePresence>
         {editorOpen && (
