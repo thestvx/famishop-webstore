@@ -102,10 +102,11 @@ export const AdminSidebar = ({
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
           {navItems.map((item) => {
+            const normalizedPath = (pathname || "").replace(/\/$/, "");
             const active =
               item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
+                ? normalizedPath === "/admin"
+                : normalizedPath === item.href || normalizedPath.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
               <Link
