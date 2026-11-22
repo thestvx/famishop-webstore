@@ -192,7 +192,7 @@ export default function AdminProductsPage() {
       {previewImage && (
         <div
           className="fixed z-[100] pointer-events-none w-64 h-64 rounded-2xl border border-black/10 bg-white shadow-2xl overflow-hidden"
-          style={{ left: Math.min(previewPos.x + 16, window.innerWidth - 280), top: Math.min(previewPos.y + 16, window.innerHeight - 280) }}
+          style={{ left: Math.min(previewPos.x + 16, (typeof window !== "undefined" ? window.innerWidth : 1200) - 280), top: Math.min(previewPos.y + 16, (typeof window !== "undefined" ? window.innerHeight : 800) - 280) }}
         >
           <img src={previewImage} alt="preview" className="w-full h-full object-contain p-2" />
         </div>
