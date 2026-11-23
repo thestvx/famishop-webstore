@@ -83,7 +83,7 @@ const getData = (t: (key: string) => string): NavMenu => [
 const TopNavbar = () => {
   const t = useTranslations();
   const { region, setRegion, locale } = useI18n() as any;
-  const { user } = useCustomerAuth();
+  const { user, loading: authLoading } = useCustomerAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -154,7 +154,7 @@ const TopNavbar = () => {
               width={380}
               height={114}
               priority
-              className="h-[40px] w-auto sm:h-[48px] md:h-[56px] lg:h-[64px] xl:h-[72px] object-contain flex-shrink-0"
+              className="h-9 w-auto sm:h-10 md:h-11 lg:h-12 object-contain"
             />
           </Link>
         </div>
@@ -172,8 +172,8 @@ const TopNavbar = () => {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <form onSubmit={submitSearch} className="hidden lg:block relative" ref={searchRef}>
-          <InputGroup className="flex bg-[#F0F0F0] w-[240px] xl:w-[320px]">
+        <form onSubmit={submitSearch} className="hidden lg:block flex-1 min-w-0 max-w-xl relative" ref={searchRef}>
+          <InputGroup className="flex bg-[#F0F0F0] w-full">
             <InputGroup.Text>
               <Image
                 priority
