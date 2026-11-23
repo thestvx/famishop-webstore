@@ -87,7 +87,7 @@ const TopNavbar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
   const searchRef = useRef<HTMLFormElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const data = getData(t);
@@ -109,9 +109,8 @@ const TopNavbar = () => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
       }
-      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
-        setAccountOpen(false);
-      }
+      // no-op for modal; handled by backdrop
+    // eslint-disable-next-line no-empty
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -251,30 +250,36 @@ const TopNavbar = () => {
             />
           </Link>
           <CartBtn />
-          <div className="relative" ref={accountRef}>
-            <button
-              type="button"
-              onClick={() => setAccountOpen((v) => !v)}
-              className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
-            >
-              Commencer
-            </button>
-            {accountOpen && (
-              <div className="absolute right-0 top-full mt-2 z-50 w-52 rounded-xl border border-black/10 bg-white shadow-lg p-2">
-                <Link href="/login" onClick={() => setAccountOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
-                  Se connecter
-                </Link>
-                <Link href="/register" onClick={() => setAccountOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
-                  Créer un compte
-                </Link>
-                {user && (
-                  <Link href="/account" onClick={() => setAccountOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
-                    Mon compte
+          <button
+            type="button"
+            onClick={() => setAccountModalOpen(true)}
+            className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
+          >
+            Commencer
+          </button>
+          {accountModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => setAccountModalOpen(false)}>
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">Commencer</h3>
+                  <button type="button" onClick={() => setAccountModalOpen(false)} className="text-black/60 hover:text-black">✕</button>
+                </div>
+                <div className="space-y-3">
+                  <Link href="/login" onClick={() => setAccountModalOpen(false)} className="block w-full rounded-full bg-black text-white text-center py-3 text-sm font-medium hover:bg-black/80">
+                    Se connecter
                   </Link>
-                )}
+                  <Link href="/register" onClick={() => setAccountModalOpen(false)} className="block w-full rounded-full border border-black/10 text-center py-3 text-sm font-medium hover:bg-[#F0F0F0]">
+                    Créer un compte
+                  </Link>
+                  {user && (
+                    <Link href="/account" onClick={() => setAccountModalOpen(false)} className="block w-full rounded-full border border-black/10 text-center py-3 text-sm font-medium hover:bg-[#F0F0F0]">
+                      Mon compte
+                    </Link>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </nav>
