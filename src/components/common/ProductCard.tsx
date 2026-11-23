@@ -8,6 +8,10 @@ import { useI18n } from "@/lib/i18n";
 import ProductImage from "@/components/common/ProductImage";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { cn } from "@/lib/utils";
+import { useCustomerAuth } from "@/lib/useCustomerAuth";
+import { getCustomerWishlist, toggleCustomerWishlist } from "@/lib/customerStore";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type ProductCardProps = {
   data: Product;
@@ -17,6 +21,23 @@ const ProductCard = ({ data }: ProductCardProps) => {
   const { formatPrice, locale } = useI18n();
   const title = getLocalizedProductTitle(data, locale) || "";
   const sold = Boolean((data as any).sold);
+  const { user } = useCustomerAuth();
+  const router = useRouter();
+  const [wish, setWish] = useState(false);
+  useEffect(() => {
+    if (!user) { setWish(false); return; }
+    getCustomerWishlist(user.uid).then((ids) => setWish(ids.includes(String(data.id)))).catch(() => {});
+  }, [user, data.id]);
+  const toggleWish = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    const next = await toggleCustomerWishlist(user.uid, data.id);
+    setWish(next);
+  };
   const rating = Number.isFinite(data.rating) ? data.rating : 0;
   const discount = data.discount || { amount: 0, percentage: 0 };
   const slug = title.trim().replace(/\s+/g, "-") || "product";
@@ -35,6 +56,14 @@ const ProductCard = ({ data }: ProductCardProps) => {
           alt={title}
           loading="lazy"
         />
+        <button
+          type="button"
+          onClick={toggleWish}
+          className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow"
+          aria-label="wishlist"
+        >
+          <span className={wish ? "text-red-600" : "text-black/50"}>{wish ? "♥" : "♡"}</span>
+        </button>
         {sold && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/30">
             <span className="rotate-[-16deg] rounded-xl border-4 border-white bg-red-600 px-4 py-1.5 text-lg font-black uppercase tracking-widest text-white shadow-xl">

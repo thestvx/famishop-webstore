@@ -203,6 +203,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const customerUid = body?.customerUid || body?.customer?.uid || null;
+  if (!customerUid) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
   const currency = ["EUR", "USD", "DZD"].includes(body?.currency) ? body.currency : "EUR";
   const customer = body?.customer || {};
   const incomingItems: IncomingItem[] = Array.isArray(body?.items) ? body.items : [];

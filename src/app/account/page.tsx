@@ -8,6 +8,7 @@ import { getCustomerProfile, updateCustomerProfile, getCustomerAddresses, addCus
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { fetchProducts } from "@/lib/productsStore";
 import { logoutCustomer } from "@/lib/customerAuth";
+import { updateEmail } from "firebase/auth";
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useCustomerAuth();
@@ -179,33 +180,61 @@ export default function AccountPage() {
           )}
           {tab === "profile" && (
             <ProfileTab profile={profile} user={user} onSave={async (data) => {
+              if (data.email && data.email !== profile.email) {
+                try { await updateEmail(user, data.email); } catch (e) { console.error(e); }
+              }
               await updateCustomerProfile(user.uid, data);
               setProfile((prev) => (prev ? { ...prev, ...data } : prev));
             }} />
           )}
           {tab === "orders" && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h2 className="text-xl font-bold">My Orders</h2>
-              {orders.length === 0 ? <div className="text-sm text-black/60">No orders yet.</div> : orders.map((o) => (
-                <div key={o.id} className="border rounded-xl p-4 text-sm">
-                  <div className="flex justify-between font-semibold"><span>Order #{o.id}</span><span>{o.status}</span></div>
-                  <div className="text-black/60">{new Date(o.created_at).toLocaleString()}</div>
-                  <div>Payment: {o.payment_status} ({o.payment_method})</div>
-                  <div>Shipping: {o.shipping_method}</div>
-                  <div className="font-bold mt-1">{formatPrice(Number(o.total || 0))}</div>
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-sm">View details</summary>
-                    <div className="mt-2 space-y-1">
-                      {Array.isArray(o.items) && o.items.map((it: any, idx: number) => (
-                        <div key={idx} className="flex justify-between">
-                          <span>{it.name} × {it.quantity}</span>
-                          <span>{formatPrice(Number(it.price || 0) * Number(it.quantity || 1))}</span>
+              {orders.length === 0 ? <div className="text-sm text-black/60">No orders yet.</div> : orders.map((o) => {
+                const status = String(o.status || "pending").toLowerCase();
+                const stages = ["Commande créée", "Paiement confirmé", "En préparation", "Expédiée", "En cours de livraison", "Livrée"];
+                const currentIndex =
+                  status === "cancelled" || status === "canceled" ? -1 :
+                  status === "pending" ? 0 :
+                  ["paid", "processing"].includes(status) ? 2 :
+                  status === "shipped" ? 3 :
+                  status === "delivered" ? 5 : 1;
+                return (
+                  <div key={o.id} className="border rounded-xl p-4 text-sm space-y-3">
+                    <div className="flex justify-between font-semibold"><span>Order #{o.id}</span><span>{o.status}</span></div>
+                    <div className="text-black/60">{new Date(o.created_at).toLocaleString()}</div>
+                    <div className="flex items-center gap-2 overflow-x-auto py-2">
+                      {stages.map((stage, idx) => (
+                        <div key={stage} className="flex items-center gap-2 shrink-0">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${idx <= currentIndex ? "bg-black text-white" : "bg-gray-200 text-black/40"}`}>
+                            {idx <= currentIndex ? "✓" : idx + 1}
+                          </div>
+                          <span className={`text-xs whitespace-nowrap ${idx <= currentIndex ? "text-black" : "text-black/40"}`}>{stage}</span>
+                          {idx < stages.length - 1 && <div className={`w-6 h-px ${idx < currentIndex ? "bg-black" : "bg-gray-200"}`} />}
                         </div>
                       ))}
                     </div>
-                  </details>
-                </div>
-              ))}
+                    {status === "cancelled" || status === "canceled" ? <div className="text-red-600 text-xs">Commande annulée</div> : null}
+                    <div>Payment: {o.payment_status} ({o.payment_method})</div>
+                    <div>Shipping: {o.shipping_method}</div>
+                    <div className="font-bold mt-1">{formatPrice(Number(o.total || 0))}</div>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-sm">View details</summary>
+                      <div className="mt-2 space-y-1">
+                        {Array.isArray(o.items) && o.items.map((it: any, idx: number) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>{it.name} × {it.quantity}</span>
+                            <span>{formatPrice(Number(it.price || 0) * Number(it.quantity || 1))}</span>
+                          </div>
+                        ))}
+                        <div className="pt-2 border-t mt-2">
+                          <div>Shipping address: {JSON.stringify(o.shipping_address)}</div>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                );
+              })}
             </div>
           )}
           {tab === "addresses" && (
@@ -257,17 +286,43 @@ function ProfileTab({ profile, user, onSave }: { profile: CustomerProfile; user:
   const [firstName, setFirstName] = useState(profile.firstName);
   const [lastName, setLastName] = useState(profile.lastName);
   const [phone, setPhone] = useState(profile.phoneNumber);
+  const [email, setEmail] = useState(profile.email);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">My Profile</h2>
       <input className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
       <input className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
-      <input className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
-      <div className="text-sm text-black/60">Email: {profile.email}</div>
+      <div className="flex items-center gap-2">
+        <input className="flex-1 px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" disabled={!editingPhone} />
+        {!editingPhone ? (
+          <button type="button" onClick={() => setEditingPhone(true)} className="text-sm text-black/60">✏️</button>
+        ) : (
+          <>
+            <button type="button" onClick={async () => { setSaving(true); await onSave({ phoneNumber: phone }); setSaving(false); setEditingPhone(false); }} className="text-sm bg-black text-white px-3 py-1.5 rounded-full">Save</button>
+            <button type="button" onClick={() => { setPhone(profile.phoneNumber); setEditingPhone(false); }} className="text-sm text-black/60">Cancel</button>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <input className="flex-1 px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" disabled={!editingEmail} />
+        {!editingEmail ? (
+          <button type="button" onClick={() => setEditingEmail(true)} className="text-sm text-black/60">✏️</button>
+        ) : (
+          <>
+            <button type="button" onClick={async () => { setSaving(true); await onSave({ email }); setSaving(false); setEditingEmail(false); }} className="text-sm bg-black text-white px-3 py-1.5 rounded-full">Save</button>
+            <button type="button" onClick={() => { setEmail(profile.email); setEditingEmail(false); }} className="text-sm text-black/60">Cancel</button>
+          </>
+        )}
+      </div>
+      <div className="text-sm text-black/60">Created: {profile.createdAt ? new Date(profile.createdAt.seconds ? profile.createdAt.seconds * 1000 : profile.createdAt).toLocaleDateString() : "-"}</div>
+      <div className="text-sm text-black/60">Email verified: {profile.emailVerified ? "Yes" : "No"}</div>
+      <div className="text-sm text-black/60">Phone verified: {profile.phoneVerified ? "Yes" : "No"}</div>
       <button disabled={saving} onClick={async () => {
         setSaving(true);
-        await onSave({ firstName, lastName, phoneNumber: phone });
+        await onSave({ firstName, lastName });
         setSaving(false);
       }} className="bg-black text-white px-5 py-2 rounded-full text-sm disabled:opacity-50">
         Save

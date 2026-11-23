@@ -25,6 +25,10 @@ export async function onRequestPost(context) {
 
     const currency = ["EUR", "USD", "DZD"].includes(body?.currency) ? body.currency : "EUR";
     const customer = body?.customer || {};
+    const customerUid = body?.customerUid || body?.customer?.uid || null;
+    if (!customerUid) {
+      return json({ error: "Authentication required" }, 401);
+    }
     const incomingItems = Array.isArray(body?.items) ? body.items : [];
     if (incomingItems.length === 0) return json({ error: "Cart is empty" }, 400);
 

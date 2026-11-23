@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import ProductImage from "@/components/common/ProductImage";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { useCustomerAuth } from "@/lib/useCustomerAuth";
+import { getCustomerProfile, getCustomerAddresses, addCustomerAddress } from "@/lib/customerStore";
 import { cn } from "@/lib/utils";
 // Stripe Checkout is handled via server-side session creation (hosted page).
 
@@ -91,6 +92,50 @@ export default function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [promo, setPromo] = useState<any>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    getCustomerProfile(user.uid)
+      .then((profile) => {
+        if (!active || !profile) return;
+        setCustomer((prev) => ({
+          ...prev,
+          firstName: profile.firstName || prev.firstName,
+          lastName: profile.lastName || prev.lastName,
+          email: profile.email || prev.email,
+          phone: (() => {
+            const digits = (profile.phoneNumber || "").replace(/\D/g, "");
+            if (profile.countryCode === "FR") return digits.replace(/^33/, "");
+            if (profile.countryCode === "IT") return digits.replace(/^39/, "");
+            if (profile.countryCode === "ES") return digits.replace(/^34/, "");
+            return prev.phone;
+          })(),
+          country: (profile.countryCode === "IT" ? "IT" : "FR") as any,
+        }));
+      })
+      .catch(() => {});
+    getCustomerAddresses(user.uid)
+      .then((addresses) => {
+        if (!active || !addresses?.length) return;
+        setSavedAddresses(addresses);
+        const def = addresses.find((a: any) => a.isDefault) || addresses[0];
+        if (def) {
+          setCustomer((prev) => ({
+            ...prev,
+            address: def.streetAddress || prev.address,
+            city: def.city || prev.city,
+            postalCode: def.postalCode || prev.postalCode,
+            country: (def.country === "Italy" ? "IT" : "FR") as any,
+          }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // Load applied promo from cart
   useEffect(() => {
@@ -212,6 +257,26 @@ export default function CheckoutPage() {
     setSubmitError(null);
     setSubmitting(true);
     try {
+      if (user) {
+        const exists = savedAddresses.some((a) =>
+          a.streetAddress === customer.address &&
+          a.city === customer.city &&
+          a.postalCode === customer.postalCode &&
+          a.country === COUNTRY_NAME[customer.country]
+        );
+        if (!exists) {
+          await addCustomerAddress(user.uid, {
+            fullName: `${customer.firstName} ${customer.lastName}`.trim(),
+            phoneNumber: `${phonePrefix}${nationalDigits(customer.phone, customer.country)}`,
+            country: COUNTRY_NAME[customer.country],
+            city: customer.city,
+            postalCode: customer.postalCode,
+            streetAddress: customer.address,
+            apartment: "",
+            isDefault: savedAddresses.length === 0,
+          });
+        }
+      }
       const payload = {
         currency: (window.localStorage.getItem("famishop-currency") as string) || "EUR",
         customer: {

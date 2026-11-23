@@ -16,6 +16,8 @@ export async function onRequestPost(context) {
     return json({ error: "Invalid JSON" }, 400);
   }
 
+  const customerUid = body?.customerUid || body?.customer?.uid || null;
+  if (!customerUid) return json({ error: "Authentication required" }, 401);
   const currency = ["EUR", "USD", "DZD"].includes(body?.currency) ? body.currency : "EUR";
   const customer = body?.customer || {};
   const incomingItems = Array.isArray(body?.items) ? body.items : [];

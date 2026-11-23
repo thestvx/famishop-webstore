@@ -16,6 +16,8 @@ import { ensureCartId } from "@/lib/features/carts/cartsSlice";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import { useCustomerAuth } from "@/lib/useCustomerAuth";
+import AuthModal from "@/components/layout/AuthModal";
 
 export default function CartPage() {
   const { cart, totalPrice, adjustedTotalPrice } = useAppSelector(
@@ -25,6 +27,9 @@ export default function CartPage() {
   const { t, formatPrice } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useCustomerAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState(false);
 
   useEffect(() => {
     if (cart && !cart.cartId) dispatch(ensureCartId());
@@ -43,6 +48,14 @@ export default function CartPage() {
   const [promo, setPromo] = useState<any>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
+
+  useEffect(() => {
+    if (pendingCheckout && user) {
+      setPendingCheckout(false);
+      setAuthModalOpen(false);
+      router.push("/checkout");
+    }
+  }, [pendingCheckout, user, router]);
 
   useEffect(() => {
     try {
@@ -182,15 +195,24 @@ export default function CartPage() {
                   </div>
                 )}
                 {promoError && <div className="text-xs text-red-500">{promoError}</div>}
-                <Link href="/checkout" className="block w-full">
+                <div className="space-y-2">
                   <Button
                     type="button"
+                    onClick={() => {
+                      if (user) router.push("/checkout");
+                      else {
+                        setPendingCheckout(true);
+                        setAuthModalOpen(true);
+                      }
+                    }}
                     className="text-sm md:text-base font-medium bg-black rounded-full w-full py-4 h-[54px] md:h-[60px] group"
                   >
                     {t("cart.goToCheckout")}{" "}
                     <FaArrowRight className="text-xl ml-2 group-hover:translate-x-1 transition-all" />
                   </Button>
-                </Link>
+                  {!user && <p className="text-xs text-black/60 text-center">Connectez-vous ou créez un compte pour finaliser votre commande.</p>}
+                </div>
+                <AuthModal open={authModalOpen} onClose={() => { setAuthModalOpen(false); setPendingCheckout(false); }} />
               </div>
             </div>
           </>
