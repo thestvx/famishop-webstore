@@ -23,6 +23,7 @@ import { fetchProducts } from "@/lib/productsStore";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { Product } from "@/types/product.types";
 import ProductImage from "@/components/common/ProductImage";
+import AuthModal from "@/components/layout/AuthModal";
 
 const getData = (t: (key: string) => string): NavMenu => [
   {
@@ -88,8 +89,10 @@ const TopNavbar = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const searchRef = useRef<HTMLFormElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const data = getData(t);
 
   useEffect(() => {
@@ -109,8 +112,9 @@ const TopNavbar = () => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
       }
-      // no-op for modal; handled by backdrop
-    // eslint-disable-next-line no-empty
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -141,7 +145,7 @@ const TopNavbar = () => {
           </div>
           <Link
             href="/"
-            className="flex items-center"
+            className="flex items-center flex-shrink-0"
             aria-label="Famishop home"
           >
             <Image
@@ -250,35 +254,47 @@ const TopNavbar = () => {
             />
           </Link>
           <CartBtn />
-          <button
-            type="button"
-            onClick={() => setAccountModalOpen(true)}
-            className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
-          >
-            Commencer
-          </button>
-          {accountModalOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => setAccountModalOpen(false)}>
-              <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">Commencer</h3>
-                  <button type="button" onClick={() => setAccountModalOpen(false)} className="text-black/60 hover:text-black">✕</button>
-                </div>
-                <div className="space-y-3">
-                  <Link href="/login" onClick={() => setAccountModalOpen(false)} className="block w-full rounded-full bg-black text-white text-center py-3 text-sm font-medium hover:bg-black/80">
-                    Se connecter
+          {user ? (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen((v) => !v)}
+                className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100"
+              >
+                <Image src="/icons/user.svg" alt="account" width={22} height={22} />
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-black/10 bg-white shadow-lg p-2">
+                  <div className="px-3 py-2 text-sm font-semibold">Salut, {user.displayName?.split(" ")[0] || "Client"} !</div>
+                  <Link href="/account" onClick={() => setUserMenuOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
+                    Mon espace
                   </Link>
-                  <Link href="/register" onClick={() => setAccountModalOpen(false)} className="block w-full rounded-full border border-black/10 text-center py-3 text-sm font-medium hover:bg-[#F0F0F0]">
-                    Créer un compte
-                  </Link>
-                  {user && (
-                    <Link href="/account" onClick={() => setAccountModalOpen(false)} className="block w-full rounded-full border border-black/10 text-center py-3 text-sm font-medium hover:bg-[#F0F0F0]">
-                      Mon compte
-                    </Link>
-                  )}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setUserMenuOpen(false);
+                      const { signOut } = await import("firebase/auth");
+                      const { firebaseAuth } = await import("@/lib/firebase");
+                      await signOut(firebaseAuth);
+                    }}
+                    className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Se déconnecter
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setAccountModalOpen(true)}
+                className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
+              >
+                Commencer
+              </button>
+              <AuthModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
+            </>
           )}
         </div>
       </div>
