@@ -411,23 +411,23 @@ export default function CheckoutPage() {
       {extra ? (
         <div className="flex items-stretch">
           {extra}
-          <input
-            type={type}
-            value={customer[key] as string}
-            onChange={(e) => setCustomer((c) => ({ ...c, [key]: e.target.value }))}
-            className={cn(
-              "w-full px-3 py-2.5 rounded-r-xl border text-sm",
+            <input
+              type={type}
+              value={key === "email" ? (customer.email || user?.email || "") : (customer[key] as string)}
+              onChange={(e) => setCustomer((c) => ({ ...c, [key]: e.target.value }))}
+              className={cn(
+                "w-full px-3 py-2.5 rounded-r-xl border text-sm",
               errors[key] ? "border-red-500" : "border-black/10"
             )}
           />
         </div>
       ) : (
-        <input
-          type={type}
-          value={customer[key] as string}
-          onChange={(e) => setCustomer((c) => ({ ...c, [key]: e.target.value }))}
-          className={cn(
-            "w-full px-3 py-2.5 rounded-xl border text-sm",
+          <input
+            type={type}
+            value={key === "email" ? (customer.email || user?.email || "") : (customer[key] as string)}
+            onChange={(e) => setCustomer((c) => ({ ...c, [key]: e.target.value }))}
+            className={cn(
+              "w-full px-3 py-2.5 rounded-xl border text-sm",
             errors[key] ? "border-red-500" : "border-black/10"
           )}
         />
