@@ -80,6 +80,13 @@ export const CATEGORY_TREE: CategoryNode[] = [
     nameKey: "cat.kids",
     children: [
        { id: "kids-clothing", nameKey: "cat.clothing", children: [
+         { id: "kids-tshirts", nameKey: "cat.tshirts" },
+         { id: "kids-shirts", nameKey: "cat.shirts" },
+         { id: "kids-hoodies", nameKey: "cat.hoodies" },
+         { id: "kids-jeans", nameKey: "cat.jeans" },
+         { id: "kids-shorts", nameKey: "cat.shorts" },
+         { id: "kids-dresses", nameKey: "cat.dresses" },
+         { id: "kids-jackets", nameKey: "cat.jackets" },
          { id: "kids-ensemble", nameKey: "cat.ensemble" },
          { id: "kids-pyjama", nameKey: "cat.pyjama" },
          { id: "kids-pull", nameKey: "cat.pull" },
