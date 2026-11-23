@@ -125,18 +125,22 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         phoneNumber: parsePhoneNumber(phone.trim(), countryCode as any)?.number || phone.trim(),
         countryCode,
       });
+      const normalizedPhone = parsePhoneNumber(phone.trim(), countryCode as any)?.number || phone.trim();
       await saveCustomerProfile({
         uid: u.uid,
         firstName,
         lastName,
         email: u.email || email,
-        phoneNumber: parsePhoneNumber(phone.trim(), countryCode as any)?.number || phone.trim(),
+        phoneNumber: normalizedPhone,
         countryCode,
         phoneVerified: false,
         emailVerified: false,
         accountStatus: "active",
         marketingOptIn: marketing,
       });
+      try {
+        localStorage.setItem("famishop-customer-profile", JSON.stringify({ firstName, lastName, email: u.email || email, phoneNumber: normalizedPhone, countryCode }));
+      } catch {}
       onClose();
     } catch (err: any) {
       setError(err?.message || "Registration failed.");

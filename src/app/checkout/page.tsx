@@ -115,17 +115,59 @@ export default function CheckoutPage() {
             })(),
             country: (profile.countryCode === "IT" ? "IT" : "FR") as any,
           }));
-        } else if (user) {
-          setCustomer((prev) => ({
-            ...prev,
-            firstName: user.displayName?.split(" ")[0] || prev.firstName,
-            lastName: user.displayName?.split(" ").slice(1).join(" ") || prev.lastName,
-            email: user.email || prev.email,
-          }));
+        } else {
+          try {
+            const raw = (typeof window !== "undefined") ? window.localStorage.getItem("famishop-customer-profile") : null;
+            if (raw) {
+              const cached = JSON.parse(raw);
+              setCustomer((prev) => ({
+                ...prev,
+                firstName: cached.firstName || prev.firstName,
+                lastName: cached.lastName || prev.lastName,
+                email: cached.email || prev.email,
+                phone: (() => {
+                  const digits = (cached.phoneNumber || "").replace(/\D/g, "");
+                  if (cached.countryCode === "FR") return digits.replace(/^33/, "");
+                  if (cached.countryCode === "IT") return digits.replace(/^39/, "");
+                  if (cached.countryCode === "ES") return digits.replace(/^34/, "");
+                  return prev.phone;
+                })(),
+                country: (cached.countryCode === "IT" ? "IT" : "FR") as any,
+              }));
+            } else if (user) {
+              setCustomer((prev) => ({
+                ...prev,
+                firstName: user.displayName?.split(" ")[0] || prev.firstName,
+                lastName: user.displayName?.split(" ").slice(1).join(" ") || prev.lastName,
+                email: user.email || prev.email,
+              }));
+            }
+          } catch {}
         }
       })
       .catch(() => {
         if (!active || !user) return;
+        try {
+          const raw = (typeof window !== "undefined") ? window.localStorage.getItem("famishop-customer-profile") : null;
+          if (raw) {
+            const cached = JSON.parse(raw);
+            setCustomer((prev) => ({
+              ...prev,
+              firstName: cached.firstName || prev.firstName,
+              lastName: cached.lastName || prev.lastName,
+              email: cached.email || prev.email,
+              phone: (() => {
+                const digits = (cached.phoneNumber || "").replace(/\D/g, "");
+                if (cached.countryCode === "FR") return digits.replace(/^33/, "");
+                if (cached.countryCode === "IT") return digits.replace(/^39/, "");
+                if (cached.countryCode === "ES") return digits.replace(/^34/, "");
+                return prev.phone;
+              })(),
+              country: (cached.countryCode === "IT" ? "IT" : "FR") as any,
+            }));
+            return;
+          }
+        } catch {}
         setCustomer((prev) => ({
           ...prev,
           firstName: user.displayName?.split(" ")[0] || prev.firstName,
