@@ -5,6 +5,7 @@ import { newArrivalsData, topSellingData, relatedProductData } from "@/lib/data/
 import { Package, ShoppingCart, Users, DollarSign, Eye, TrendingUp } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isAnalyticsProduct } from "@/lib/productsStore";
+import FavoritesAnalytics from "@/components/admin/FavoritesAnalytics";
 import ProductImage, { PRODUCT_IMAGE_FALLBACK } from "@/components/common/ProductImage";
 
 const fallbackProducts = [
@@ -418,6 +419,9 @@ export default function AdminOverviewPage() {
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="mt-6">
+        <FavoritesAnalytics />
       </div>
     </div>
   );
