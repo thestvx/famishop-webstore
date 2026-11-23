@@ -44,7 +44,14 @@ export default function FavoritesAnalytics() {
         setRows(favRows);
         setProducts((prods || []).filter((p: any) => !isAnalyticsProduct(p)));
       } catch (e: any) {
-        if (active) setError(e?.message || "Failed to load favorites.");
+        if (active) {
+          const msg = e?.message || "Failed to load favorites.";
+          if (/permission|insufficient/i.test(msg)) {
+            setError("Favorites analytics require deploying firestore.rules to Firebase.");
+          } else {
+            setError(msg);
+          }
+        }
       } finally {
         if (active) setLoading(false);
       }
