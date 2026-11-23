@@ -8,6 +8,7 @@ import PixelPreloader from "@/components/common/PixelPreloader";
 import FirebaseAnalytics from "@/components/common/FirebaseAnalytics";
 import StorefrontShell from "@/components/layout/StorefrontShell";
 import SiteVisitTracker from "@/components/common/SiteVisitTracker";
+import CustomerWelcome from "@/components/common/CustomerWelcome";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://famishop-webstore.pages.dev"),
@@ -83,6 +84,7 @@ export default function RootLayout({
           <FirebaseAnalytics />
           <PixelPreloader />
           <StorefrontShell>{children}</StorefrontShell>
+          <CustomerWelcome />
         </Providers>
       </body>
     </html>

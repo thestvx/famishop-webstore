@@ -273,6 +273,7 @@ const TopNavbar = () => {
                     type="button"
                     onClick={async () => {
                       setUserMenuOpen(false);
+                      if (user && typeof window !== "undefined") sessionStorage.removeItem(`famishop-welcome-shown-${user.uid}`);
                       const { signOut } = await import("firebase/auth");
                       const { firebaseAuth } = await import("@/lib/firebase");
                       await signOut(firebaseAuth);

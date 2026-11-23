@@ -90,6 +90,7 @@ export default function AccountPage() {
     .reduce((s, o) => s + Number(o.total || 0), 0);
 
   const handleLogout = async () => {
+    if (user && typeof window !== "undefined") sessionStorage.removeItem(`famishop-welcome-shown-${user.uid}`);
     await logoutCustomer();
     router.push("/login");
   };
