@@ -24,10 +24,18 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Customers: admin only
-    match /customers/{customerId} {
-      allow read, write: if isAdmin();
+  // Customers: admin only
+  match /customers/{customerId} {
+    allow read, write: if isAdmin();
+  }
+
+  // Customer accounts: users can access only their own data
+  match /users/{userId} {
+    allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    match /{subcollection}/{docId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
+  }
 
     // Settings: admin only
     match /settings/{docId} {

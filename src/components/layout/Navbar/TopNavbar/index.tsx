@@ -18,6 +18,7 @@ import CartBtn from "./CartBtn";
 import LocaleSwitcher from "@/components/common/LocaleSwitcher";
 import CurrencySwitcher from "@/components/common/CurrencySwitcher";
 import { useI18n, useTranslations } from "@/lib/i18n";
+import { useCustomerAuth } from "@/lib/useCustomerAuth";
 import { fetchProducts } from "@/lib/productsStore";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
 import { Product } from "@/types/product.types";
@@ -81,6 +82,7 @@ const getData = (t: (key: string) => string): NavMenu => [
 const TopNavbar = () => {
   const t = useTranslations();
   const { region, setRegion, locale } = useI18n() as any;
+  const { user } = useCustomerAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -244,7 +246,7 @@ const TopNavbar = () => {
             />
           </Link>
           <CartBtn />
-          <Link href="/#signin" className="p-1">
+          <Link href={user ? "/account" : "/login"} className="p-1">
             <Image
               priority
               src="/icons/user.svg"

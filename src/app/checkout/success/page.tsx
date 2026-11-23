@@ -3,13 +3,14 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/lib/hooks/redux";
+import { useCustomerAuth } from "@/lib/useCustomerAuth";
 import { clearCart } from "@/lib/features/carts/cartsSlice";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { fetchOrder } from "@/lib/ordersStore";
 import { printOrderReceipt } from "@/lib/receipt";
 
-function ReviewForm({ productId, productName }: { productId: number; productName: string }) {
+function ReviewForm({ productId, productName, userId, userName, userEmail }: { productId: number; productName: string; userId?: string | null; userName?: string | null; userEmail?: string | null }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [msg, setMsg] = useState("");
@@ -21,7 +22,7 @@ function ReviewForm({ productId, productName }: { productId: number; productName
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, rating, content: comment }),
+        body: JSON.stringify({ productId, rating, content: comment, userId, userName, userEmail }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed");
@@ -55,6 +56,7 @@ function ReviewForm({ productId, productName }: { productId: number; productName
 function SuccessContent() {
   const { t } = useI18n();
   const dispatch = useAppDispatch();
+  const { user } = useCustomerAuth();
   const params = useSearchParams();
   const orderId = params.get("orderId");
   const sessionId = params.get("session_id");
@@ -124,9 +126,9 @@ function SuccessContent() {
       {order && order.items && order.items.length > 0 && (
         <div className="w-full max-w-xl mt-6 text-left">
           <h2 className="text-lg font-bold mb-3">Write a review</h2>
-          {order.items.map((it: any, idx: number) => (
-            <ReviewForm key={idx} productId={it.id} productName={it.name} />
-          ))}
+            {order.items.map((it: any, idx: number) => (
+              <ReviewForm key={idx} productId={it.id} productName={it.name} userId={user?.uid} userName={user?.displayName} userEmail={user?.email} />
+            ))}
         </div>
       )}
       {status && (

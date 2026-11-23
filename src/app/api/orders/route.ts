@@ -336,6 +336,7 @@ export async function POST(req: Request) {
     items,
     notes: body?.notes || null,
     cart_id: body?.cartId || null,
+    customer_uid: body?.customerUid || body?.customer?.uid || null,
     customer: JSON.stringify(customerSnapshot),
   };
 

@@ -9,6 +9,7 @@ import { clearCart } from "@/lib/features/carts/cartsSlice";
 import { useI18n } from "@/lib/i18n";
 import ProductImage from "@/components/common/ProductImage";
 import { getLocalizedProductTitle } from "@/lib/productsStore";
+import { useCustomerAuth } from "@/lib/useCustomerAuth";
 import { cn } from "@/lib/utils";
 // Stripe Checkout is handled via server-side session creation (hosted page).
 
@@ -76,6 +77,7 @@ function nationalDigits(phone: string, country: CountryCode) {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { user } = useCustomerAuth();
   const dispatch = useAppDispatch();
   const { cart } = useAppSelector((state: RootState) => state.carts);
   const rehydrated = useAppSelector((state: any) => state?._persist?.rehydrated);
@@ -238,6 +240,7 @@ export default function CheckoutPage() {
           reference: null,
         },
         cartId,
+        customerUid: user?.uid || null,
         discount: promo
           ? {
               id: promo.discountId,
