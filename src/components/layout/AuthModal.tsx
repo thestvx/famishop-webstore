@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { useCustomerAuth } from "@/lib/useCustomerAuth";
 import { registerCustomer, loginCustomer, resetCustomerPassword } from "@/lib/customerAuth";
 import { saveCustomerProfile } from "@/lib/customerStore";
+import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 
 const COUNTRIES = [
   { code: "FR", dial: "+33", flag: "🇫🇷", name: "France" },
@@ -98,8 +99,8 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       setError("Please enter your name.");
       return;
     }
-    if (!phoneRegex(countryCode).test(phone.trim())) {
-      setError("Invalid phone number for selected country.");
+    if (!isValidPhoneNumber(phone.trim(), countryCode as any)) {
+      setError("Veuillez saisir un numéro de téléphone valide pour le pays sélectionné.");
       return;
     }
     if (password.length < 8) {
@@ -121,7 +122,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         password,
         firstName,
         lastName,
-        phoneNumber: toE164(countryCode, phone),
+        phoneNumber: parsePhoneNumber(phone.trim(), countryCode as any)?.number || phone.trim(),
         countryCode,
       });
       await saveCustomerProfile({
@@ -129,7 +130,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         firstName,
         lastName,
         email: u.email || email,
-        phoneNumber: toE164(countryCode, phone),
+        phoneNumber: parsePhoneNumber(phone.trim(), countryCode as any)?.number || phone.trim(),
         countryCode,
         phoneVerified: false,
         emailVerified: false,
