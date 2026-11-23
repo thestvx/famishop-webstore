@@ -154,7 +154,7 @@ const TopNavbar = () => {
               width={380}
               height={114}
               priority
-              className="h-[56px] w-auto sm:h-[64px] md:h-[72px] lg:h-[80px] xl:h-[88px] object-contain flex-shrink-0"
+              className="h-[40px] w-auto sm:h-[48px] md:h-[56px] lg:h-[64px] xl:h-[72px] object-contain flex-shrink-0"
             />
           </Link>
         </div>
@@ -173,7 +173,7 @@ const TopNavbar = () => {
           </NavigationMenuList>
         </NavigationMenu>
         <form onSubmit={submitSearch} className="hidden lg:block relative" ref={searchRef}>
-          <InputGroup className="flex bg-[#F0F0F0] w-[320px] xl:w-[380px]">
+          <InputGroup className="flex bg-[#F0F0F0] w-[240px] xl:w-[320px]">
             <InputGroup.Text>
               <Image
                 priority
@@ -288,10 +288,10 @@ const TopNavbar = () => {
             <>
               <button
                 type="button"
-                onClick={() => setAccountModalOpen(true)}
-                className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
-              >
-                Commencer
+            onClick={() => setAccountModalOpen(true)}
+            className="shrink-0 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
+          >
+            Commencer
               </button>
               <AuthModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
             </>
