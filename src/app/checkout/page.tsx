@@ -103,17 +103,19 @@ export default function CheckoutPage() {
         if (profile) {
           setCustomer((prev) => ({
             ...prev,
-            firstName: profile.firstName || prev.firstName,
-            lastName: profile.lastName || prev.lastName,
-            email: profile.email || prev.email,
+            firstName: profile.firstName || (profile as any).firstname || prev.firstName,
+            lastName: profile.lastName || (profile as any).lastname || prev.lastName,
+            email: profile.email || (profile as any).emailAddress || prev.email,
             phone: (() => {
-              const digits = (profile.phoneNumber || "").replace(/\D/g, "");
-              if (profile.countryCode === "FR") return digits.replace(/^33/, "");
-              if (profile.countryCode === "IT") return digits.replace(/^39/, "");
-              if (profile.countryCode === "ES") return digits.replace(/^34/, "");
+              const rawPhone = profile.phoneNumber || (profile as any).phone || "";
+              const digits = String(rawPhone).replace(/\D/g, "");
+              const cc = profile.countryCode || (profile as any).country || "FR";
+              if (cc === "FR") return digits.replace(/^33/, "");
+              if (cc === "IT") return digits.replace(/^39/, "");
+              if (cc === "ES") return digits.replace(/^34/, "");
               return prev.phone;
             })(),
-            country: (profile.countryCode === "IT" ? "IT" : "FR") as any,
+            country: ((profile.countryCode || (profile as any).country) === "IT" ? "IT" : "FR") as any,
           }));
         } else {
           try {
@@ -126,13 +128,15 @@ export default function CheckoutPage() {
                 lastName: cached.lastName || prev.lastName,
                 email: cached.email || prev.email,
                 phone: (() => {
-                  const digits = (cached.phoneNumber || "").replace(/\D/g, "");
-                  if (cached.countryCode === "FR") return digits.replace(/^33/, "");
-                  if (cached.countryCode === "IT") return digits.replace(/^39/, "");
-                  if (cached.countryCode === "ES") return digits.replace(/^34/, "");
+                  const rawPhone = cached.phoneNumber || cached.phone || "";
+                  const digits = String(rawPhone).replace(/\D/g, "");
+                  const cc = cached.countryCode || cached.country || "FR";
+                  if (cc === "FR") return digits.replace(/^33/, "");
+                  if (cc === "IT") return digits.replace(/^39/, "");
+                  if (cc === "ES") return digits.replace(/^34/, "");
                   return prev.phone;
                 })(),
-                country: (cached.countryCode === "IT" ? "IT" : "FR") as any,
+                country: ((cached.countryCode || cached.country) === "IT" ? "IT" : "FR") as any,
               }));
             } else if (user) {
               setCustomer((prev) => ({
@@ -140,6 +144,7 @@ export default function CheckoutPage() {
                 firstName: user.displayName?.split(" ")[0] || prev.firstName,
                 lastName: user.displayName?.split(" ").slice(1).join(" ") || prev.lastName,
                 email: user.email || prev.email,
+                phone: (user.phoneNumber || "").replace(/\D/g, "").replace(/^33/, "").replace(/^39/, "").replace(/^34/, "") || prev.phone,
               }));
             }
           } catch {}

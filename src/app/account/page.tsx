@@ -284,10 +284,10 @@ export default function AccountPage() {
 }
 
 function ProfileTab({ profile, user, onSave }: { profile: CustomerProfile; user: any; onSave: (data: any) => Promise<void> }) {
-  const [firstName, setFirstName] = useState(profile.firstName);
-  const [lastName, setLastName] = useState(profile.lastName);
-  const [phone, setPhone] = useState(profile.phoneNumber);
-  const [email, setEmail] = useState(profile.email);
+  const [firstName, setFirstName] = useState(profile.firstName || (profile as any).firstname || "");
+  const [lastName, setLastName] = useState(profile.lastName || (profile as any).lastname || "");
+  const [phone, setPhone] = useState(profile.phoneNumber || (profile as any).phone || "");
+  const [email, setEmail] = useState(profile.email || (profile as any).emailAddress || "");
   const [editingPhone, setEditingPhone] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
