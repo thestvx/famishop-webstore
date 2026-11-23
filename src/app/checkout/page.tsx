@@ -296,7 +296,10 @@ export default function CheckoutPage() {
     else if (!/^\d{5}$/.test(customer.postalCode.trim())) e.postalCode = t("checkout.invalidPostalCode");
     if (!customer.firstName.trim()) e.firstName = t("checkout.required");
     if (!customer.lastName.trim()) e.lastName = t("checkout.required");
-    const emailValue = customer.email.trim();
+    const emailValue = (customer.email || user?.email || "").trim();
+    if (emailValue && !customer.email) {
+      setCustomer((prev) => ({ ...prev, email: emailValue }));
+    }
     if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) e.email = t("checkout.invalidEmail");
     if (nationalDigits(customer.phone, customer.country).length < 6) e.phone = t("checkout.invalidPhone");
     setErrors(e);
@@ -346,6 +349,7 @@ export default function CheckoutPage() {
         currency: (window.localStorage.getItem("famishop-currency") as string) || "EUR",
         customer: {
           ...customer,
+          email: (customer.email || user?.email || "").trim(),
           phone: `${phonePrefix}${nationalDigits(customer.phone, customer.country)}`,
           region: COUNTRY_NAME[customer.country],
         },
