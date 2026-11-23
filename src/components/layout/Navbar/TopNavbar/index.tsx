@@ -87,7 +87,9 @@ const TopNavbar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const searchRef = useRef<HTMLFormElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
   const data = getData(t);
 
   useEffect(() => {
@@ -106,6 +108,9 @@ const TopNavbar = () => {
     const handler = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
+        setAccountOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -246,16 +251,30 @@ const TopNavbar = () => {
             />
           </Link>
           <CartBtn />
-          <Link href={user ? "/account" : "/login"} className="p-1">
-            <Image
-              priority
-              src="/icons/user.svg"
-              height={100}
-              width={100}
-              alt="user"
-              className="max-w-[22px] max-h-[22px]"
-            />
-          </Link>
+          <div className="relative" ref={accountRef}>
+            <button
+              type="button"
+              onClick={() => setAccountOpen((v) => !v)}
+              className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80"
+            >
+              Commencer
+            </button>
+            {accountOpen && (
+              <div className="absolute right-0 top-full mt-2 z-50 w-52 rounded-xl border border-black/10 bg-white shadow-lg p-2">
+                <Link href="/login" onClick={() => setAccountOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
+                  Se connecter
+                </Link>
+                <Link href="/register" onClick={() => setAccountOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
+                  Créer un compte
+                </Link>
+                {user && (
+                  <Link href="/account" onClick={() => setAccountOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#F0F0F0]">
+                    Mon compte
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>
