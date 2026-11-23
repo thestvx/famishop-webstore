@@ -21,6 +21,7 @@ export default function AccountPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -31,12 +32,14 @@ export default function AccountPage() {
     let active = true;
     (async () => {
       try {
-        const [p, addr, wish, prods] = await Promise.all([
-          getCustomerProfile(user.uid),
-          getCustomerAddresses(user.uid),
-          getCustomerWishlist(user.uid),
-          fetchProducts(),
-        ]);
+        let p: any = null;
+        let addr: any[] = [];
+        let wish: string[] = [];
+        let prods: any[] = [];
+        try { p = await getCustomerProfile(user.uid); } catch (e) { console.error(e); }
+        try { addr = await getCustomerAddresses(user.uid); } catch (e) { console.error(e); }
+        try { wish = await getCustomerWishlist(user.uid); } catch (e) { console.error(e); }
+        try { prods = await fetchProducts(); } catch (e) { console.error(e); }
         if (!active) return;
         setProfile(p || {
           uid: user.uid,
@@ -49,9 +52,9 @@ export default function AccountPage() {
           emailVerified: user.emailVerified,
           accountStatus: "active",
         });
-        setAddresses(addr);
-        setWishlist(wish);
-        setProducts(prods);
+        setAddresses(addr || []);
+        setWishlist(wish || []);
+        setProducts(prods || []);
         // orders
         if (isSupabaseConfigured() && supabase) {
           const { data } = await supabase
@@ -72,8 +75,22 @@ export default function AccountPage() {
           });
         });
         if (active) setReviews(userReviews);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        if (active) {
+          setError(e?.message || "Failed to load account data.");
+          setProfile((prev) => prev || {
+            uid: user.uid,
+            firstName: user.displayName?.split(" ")[0] || "",
+            lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
+            email: user.email || "",
+            phoneNumber: "",
+            countryCode: "FR",
+            phoneVerified: false,
+            emailVerified: user.emailVerified,
+            accountStatus: "active",
+          });
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -132,6 +149,7 @@ export default function AccountPage() {
           </nav>
         </aside>
         <section className="lg:col-span-3 bg-white rounded-2xl border border-black/10 p-6">
+          {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
           {tab === "overview" && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Welcome back, {profile.firstName || "Customer"}!</h2>
