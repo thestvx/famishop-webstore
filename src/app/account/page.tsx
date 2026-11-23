@@ -9,6 +9,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { fetchProducts } from "@/lib/productsStore";
 import { logoutCustomer } from "@/lib/customerAuth";
 import { updateEmail } from "firebase/auth";
+import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useCustomerAuth();
@@ -290,9 +291,11 @@ function ProfileTab({ profile, user, onSave }: { profile: CustomerProfile; user:
   const [editingPhone, setEditingPhone] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">My Profile</h2>
+      {profileError && <div className="text-sm text-red-600">{profileError}</div>}
       <input className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
       <input className="w-full px-3 py-2.5 rounded-xl border border-black/10 text-sm" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
       <div className="flex items-center gap-2">
@@ -301,7 +304,21 @@ function ProfileTab({ profile, user, onSave }: { profile: CustomerProfile; user:
           <button type="button" onClick={() => setEditingPhone(true)} className="text-sm text-black/60">✏️</button>
         ) : (
           <>
-            <button type="button" onClick={async () => { setSaving(true); await onSave({ phoneNumber: phone }); setSaving(false); setEditingPhone(false); }} className="text-sm bg-black text-white px-3 py-1.5 rounded-full">Save</button>
+            <button type="button" onClick={async () => {
+              setSaving(true);
+              setProfileError("");
+                try {
+                  const normalized = isValidPhoneNumber(phone.trim(), (profile.countryCode || "FR") as any)
+                    ? parsePhoneNumber(phone.trim(), (profile.countryCode || "FR") as any)?.number || phone.trim()
+                    : phone.trim();
+                  await onSave({ phoneNumber: normalized });
+                setEditingPhone(false);
+              } catch (e: any) {
+                setProfileError(e?.message || "Unable to update your phone number. Please try again.");
+              } finally {
+                setSaving(false);
+              }
+            }} className="text-sm bg-black text-white px-3 py-1.5 rounded-full">Save</button>
             <button type="button" onClick={() => { setPhone(profile.phoneNumber); setEditingPhone(false); }} className="text-sm text-black/60">Cancel</button>
           </>
         )}
@@ -312,7 +329,18 @@ function ProfileTab({ profile, user, onSave }: { profile: CustomerProfile; user:
           <button type="button" onClick={() => setEditingEmail(true)} className="text-sm text-black/60">✏️</button>
         ) : (
           <>
-            <button type="button" onClick={async () => { setSaving(true); await onSave({ email }); setSaving(false); setEditingEmail(false); }} className="text-sm bg-black text-white px-3 py-1.5 rounded-full">Save</button>
+            <button type="button" onClick={async () => {
+              setSaving(true);
+              setProfileError("");
+              try {
+                await onSave({ email });
+                setEditingEmail(false);
+              } catch (e: any) {
+                setProfileError(e?.message || "Unable to update your email. Please try again.");
+              } finally {
+                setSaving(false);
+              }
+            }} className="text-sm bg-black text-white px-3 py-1.5 rounded-full">Save</button>
             <button type="button" onClick={() => { setEmail(profile.email); setEditingEmail(false); }} className="text-sm text-black/60">Cancel</button>
           </>
         )}

@@ -99,23 +99,40 @@ export default function CheckoutPage() {
     let active = true;
     getCustomerProfile(user.uid)
       .then((profile) => {
-        if (!active || !profile) return;
+        if (!active) return;
+        if (profile) {
+          setCustomer((prev) => ({
+            ...prev,
+            firstName: profile.firstName || prev.firstName,
+            lastName: profile.lastName || prev.lastName,
+            email: profile.email || prev.email,
+            phone: (() => {
+              const digits = (profile.phoneNumber || "").replace(/\D/g, "");
+              if (profile.countryCode === "FR") return digits.replace(/^33/, "");
+              if (profile.countryCode === "IT") return digits.replace(/^39/, "");
+              if (profile.countryCode === "ES") return digits.replace(/^34/, "");
+              return prev.phone;
+            })(),
+            country: (profile.countryCode === "IT" ? "IT" : "FR") as any,
+          }));
+        } else if (user) {
+          setCustomer((prev) => ({
+            ...prev,
+            firstName: user.displayName?.split(" ")[0] || prev.firstName,
+            lastName: user.displayName?.split(" ").slice(1).join(" ") || prev.lastName,
+            email: user.email || prev.email,
+          }));
+        }
+      })
+      .catch(() => {
+        if (!active || !user) return;
         setCustomer((prev) => ({
           ...prev,
-          firstName: profile.firstName || prev.firstName,
-          lastName: profile.lastName || prev.lastName,
-          email: profile.email || prev.email,
-          phone: (() => {
-            const digits = (profile.phoneNumber || "").replace(/\D/g, "");
-            if (profile.countryCode === "FR") return digits.replace(/^33/, "");
-            if (profile.countryCode === "IT") return digits.replace(/^39/, "");
-            if (profile.countryCode === "ES") return digits.replace(/^34/, "");
-            return prev.phone;
-          })(),
-          country: (profile.countryCode === "IT" ? "IT" : "FR") as any,
+          firstName: user.displayName?.split(" ")[0] || prev.firstName,
+          lastName: user.displayName?.split(" ").slice(1).join(" ") || prev.lastName,
+          email: user.email || prev.email,
         }));
-      })
-      .catch(() => {});
+      });
     getCustomerAddresses(user.uid)
       .then((addresses) => {
         if (!active || !addresses?.length) return;
