@@ -245,7 +245,7 @@ export default function CheckoutPage() {
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (saved?.step) setStep(saved.step);
-      if (saved?.customer) setCustomer(saved.customer);
+      // Do not restore stale customer data; profile/address autofill is authoritative.
     } catch {
       // ignore
     }
