@@ -105,7 +105,7 @@ export default function CheckoutPage() {
             ...prev,
             firstName: profile.firstName || (profile as any).firstname || prev.firstName,
             lastName: profile.lastName || (profile as any).lastname || prev.lastName,
-            email: profile.email || (profile as any).emailAddress || prev.email,
+            email: (profile.email || (profile as any).emailAddress || prev.email || "").trim(),
             phone: (() => {
               const rawPhone = profile.phoneNumber || (profile as any).phone || "";
               const digits = String(rawPhone).replace(/\D/g, "");
@@ -296,7 +296,8 @@ export default function CheckoutPage() {
     else if (!/^\d{5}$/.test(customer.postalCode.trim())) e.postalCode = t("checkout.invalidPostalCode");
     if (!customer.firstName.trim()) e.firstName = t("checkout.required");
     if (!customer.lastName.trim()) e.lastName = t("checkout.required");
-    if (!customer.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) e.email = t("checkout.invalidEmail");
+    const emailValue = customer.email.trim();
+    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) e.email = t("checkout.invalidEmail");
     if (nationalDigits(customer.phone, customer.country).length < 6) e.phone = t("checkout.invalidPhone");
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -413,8 +414,11 @@ export default function CheckoutPage() {
           {extra}
             <input
               type={type}
-              value={key === "email" ? (customer.email || user?.email || "") : (customer[key] as string)}
-              onChange={(e) => setCustomer((c) => ({ ...c, [key]: e.target.value }))}
+              value={key === "email" ? (customer.email || user?.email || "").trim() : (customer[key] as string)}
+              onChange={(e) => {
+              setCustomer((c) => ({ ...c, [key]: e.target.value }));
+              setErrors((prev) => ({ ...prev, [key]: undefined }));
+            }}
               className={cn(
                 "w-full px-3 py-2.5 rounded-r-xl border text-sm",
               errors[key] ? "border-red-500" : "border-black/10"
@@ -425,7 +429,10 @@ export default function CheckoutPage() {
           <input
             type={type}
             value={key === "email" ? (customer.email || user?.email || "") : (customer[key] as string)}
-            onChange={(e) => setCustomer((c) => ({ ...c, [key]: e.target.value }))}
+            onChange={(e) => {
+              setCustomer((c) => ({ ...c, [key]: e.target.value }));
+              setErrors((prev) => ({ ...prev, [key]: undefined }));
+            }}
             className={cn(
               "w-full px-3 py-2.5 rounded-xl border text-sm",
             errors[key] ? "border-red-500" : "border-black/10"
